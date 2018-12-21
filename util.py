@@ -1,5 +1,22 @@
 import numpy as np
 
+class AverageMeter(object):
+    """Computes and stores the average and current value"""
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+
 def norm2(x, axis=None):
     if axis:
         return np.sqrt(np.sum(x ** 2, axis=axis))
@@ -8,6 +25,17 @@ def norm2(x, axis=None):
 def cos(p1, p2):
     return (p1 * p2).sum() / (norm2(p1) * norm2(p2))
 
+def vector_sin(v):
+    assert len(v) == 2
+    # sin = y / (sqrt(x^2 + y^2))
+    l = np.sqrt(v[0] ** 2 + v[1] ** 2)
+    return v[1] / l
+
+def vector_cos(v):
+    assert len(v) == 2
+    # cos = x / (sqrt(x^2 + y^2))
+    l = np.sqrt(v[0] ** 2 + v[1] ** 2)
+    return v[0] / l
 
 def find_bottom(pts):
 

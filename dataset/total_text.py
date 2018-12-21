@@ -4,7 +4,9 @@ import cv2
 import torch.utils.data as data
 import scipy.io as io
 import numpy as np
-from util import find_bottom, find_long_edges, split_edge_seqence, norm2
+from skimage.draw import polygon as drawpoly
+from util import find_bottom, find_long_edges, split_edge_seqence, \
+    norm2, vector_cos, vector_sin
 
 from dataset.data_util import pil_load_img
 
@@ -43,7 +45,7 @@ class TextInstance(object):
         center_points = (inner_points1 + inner_points2) / 2  # disk center
         radii = norm2(inner_points1 - center_points, axis=1)  # disk radius
 
-        return center_points, radii
+        return inner_points1, inner_points2, center_points, radii
 
     def __repr__(self):
         return str(self.__dict__)
@@ -91,27 +93,53 @@ class TotalText(data.Dataset):
         return polygon
 
     def make_text_region(self, image, polygons):
-        mask = np.zeros(image.shape[:2], np.uint8)
+
+        tr_mask = np.zeros(image.shape[:2], np.uint8)
         train_mask = np.zeros(image.shape[:2], np.uint8)
+
         for polygon in polygons:
-            cv2.fillPoly(mask, [polygon.points.astype(np.int32)], color=(1,))
+            cv2.fillPoly(tr_mask, [polygon.points.astype(np.int32)], color=(1,))
             if polygon.text != '#':
                 cv2.fillPoly(train_mask, [polygon.points.astype(np.int32)], color=(1,))
-        return mask, train_mask
+        return tr_mask, train_mask
 
-    def make_text_center_line(self, mask, center_line, radius, expand=0.2, shrink=2):
+    def fill_polygon(self, mask, polygon, value):
+        """
+        fill polygon in the mask with value
+        :param mask: input mask
+        :param polygon: polygon to draw
+        :param value: fill value
+        """
+        rr, cc = drawpoly(polygon[:, 1], polygon[:, 0])
+        mask[rr, cc] = value
+
+    def make_text_center_line(self, sideline1, sideline2, center_line, radius, \
+                              tcl_mask, radius_map, sin_map, cos_map, expand=0.2, shrink=2):
 
         # TODO: shrink 1/2 * radius at two line end
         for i in range(shrink, len(center_line) - 1 - shrink):
 
-            p1 = tuple(center_line[i].astype(int))
-            p2 = tuple(center_line[i + 1].astype(int))
+            c1 = center_line[i]
+            c2 = center_line[i + 1]
+            top1 = sideline1[i]
+            top2 = sideline1[i + 1]
+            bottom1 = sideline2[i]
+            bottom2 = sideline2[i + 1]
 
-            r = int((radius[i] + radius[i + 1]) / 2 * expand)
-            r = max(1, r)
-            cv2.line(mask, p1, p2, color=1, thickness=r * 2)
+            sin_theta = vector_sin(c2 - c1)
+            cos_theta = vector_cos(c2 - c1)
 
-        return mask
+            p1 = c1 + (top1 - c1) * expand
+            p2 = c1 + (bottom1 - c1) * expand
+            p3 = c2 + (bottom2 - c2) * expand
+            p4 = c2 + (top2 - c2) * expand
+            polygon = np.stack([p1, p2, p3, p4])
+
+            self.fill_polygon(tcl_mask, polygon, value=1)
+            self.fill_polygon(radius_map, polygon, value=radius[i])
+            self.fill_polygon(sin_map, polygon, value=sin_theta)
+            self.fill_polygon(cos_map, polygon, value=cos_theta)
+
 
     def __getitem__(self, item):
 
@@ -138,14 +166,18 @@ class TotalText(data.Dataset):
         if self.transform:
             image, polygons = self.transform(image, copy.copy(polygons))
 
-        tcl = np.zeros(image.shape[:2], np.uint8)
+        tcl_mask = np.zeros(image.shape[:2], np.uint8)
+        radius_map = np.zeros(image.shape[:2])
+        sin_map = np.zeros(image.shape[:2])
+        cos_map = np.zeros(image.shape[:2])
+
         for i, polygon in enumerate(polygons):
             if polygon.text != '#':
-                center_points, radius = polygon.disk_cover()
-                tcl = self.make_text_center_line(tcl, center_points, radius)
-        tr, train_mask = self.make_text_region(image, polygons)
+                sideline1, sideline2, center_points, radius = polygon.disk_cover()
+                self.make_text_center_line(sideline1, sideline2, center_points, radius, tcl_mask, radius_map, sin_map, cos_map)
+        tr_mask, train_mask = self.make_text_region(image, polygons)
 
-        return image, tr, tcl, train_mask
+        return image, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map
 
     def __len__(self):
         return len(self.image_list)
@@ -162,7 +194,7 @@ if __name__ == '__main__':
         is_training=True,
         transform=transform
     )
-    # loader = data.DataLoader(ds, batch_size=4, shuffle=False)
-    # for img, tr, tcl, mask in loader:
-    #     print(img.size(), tr.size(), tcl.size(), mask.size())
-    print(ds[0])
+    loader = data.DataLoader(ds, batch_size=4, shuffle=False, num_workers=4)
+    for image, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map in loader:
+        print(image.size(), train_mask.size(), tr_mask.size(), tcl_mask.size(), radius_map.size(), sin_map.size(), cos_map.size())
+    # print(ds[0])
