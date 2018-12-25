@@ -95,12 +95,12 @@ class TotalText(data.Dataset):
     def make_text_region(self, image, polygons):
 
         tr_mask = np.zeros(image.shape[:2], np.uint8)
-        train_mask = np.zeros(image.shape[:2], np.uint8)
+        train_mask = np.ones(image.shape[:2], np.uint8)
 
         for polygon in polygons:
             cv2.fillPoly(tr_mask, [polygon.points.astype(np.int32)], color=(1,))
-            if polygon.text != '#':
-                cv2.fillPoly(train_mask, [polygon.points.astype(np.int32)], color=(1,))
+            if polygon.text == '#':
+                cv2.fillPoly(train_mask, [polygon.points.astype(np.int32)], color=(0,))
         return tr_mask, train_mask
 
     def fill_polygon(self, mask, polygon, value):
@@ -146,6 +146,8 @@ class TotalText(data.Dataset):
         image_id = self.image_list[item]
         image_path = os.path.join(self.image_root, image_id)
 
+        print(image_path)
+
         if self.polygons[item]:
             polygons = self.polygons[item]
         else:
@@ -154,7 +156,7 @@ class TotalText(data.Dataset):
             polygons = self.parse_mat(annotation_path)
 
             for i, polygon in enumerate(polygons):
-                # print(i)
+                print('instance', i)
                 if polygon.text != '#':
                     polygon.find_bottom_and_sideline()
             self.polygons[item] = polygons
@@ -167,15 +169,17 @@ class TotalText(data.Dataset):
             image, polygons = self.transform(image, copy.copy(polygons))
 
         tcl_mask = np.zeros(image.shape[:2], np.uint8)
-        radius_map = np.zeros(image.shape[:2])
-        sin_map = np.zeros(image.shape[:2])
-        cos_map = np.zeros(image.shape[:2])
+        radius_map = np.zeros(image.shape[:2], np.float32)
+        sin_map = np.zeros(image.shape[:2], np.float32)
+        cos_map = np.zeros(image.shape[:2], np.float32)
 
         for i, polygon in enumerate(polygons):
             if polygon.text != '#':
                 sideline1, sideline2, center_points, radius = polygon.disk_cover()
                 self.make_text_center_line(sideline1, sideline2, center_points, radius, tcl_mask, radius_map, sin_map, cos_map)
         tr_mask, train_mask = self.make_text_region(image, polygons)
+        # to pytorch channel sequence
+        image = image.transpose(2, 0, 1)
 
         return image, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map
 
@@ -191,10 +195,13 @@ if __name__ == '__main__':
     ds = TotalText(
         data_root='/home/prince/ext_data/dataset/test-detection/total-text',
         ignore_list='/data/prince/project/TextSnake/ignore_list.txt',
-        is_training=True,
+        is_training=False,
         transform=transform
     )
-    loader = data.DataLoader(ds, batch_size=4, shuffle=False, num_workers=4)
-    for image, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map in loader:
-        print(image.size(), train_mask.size(), tr_mask.size(), tcl_mask.size(), radius_map.size(), sin_map.size(), cos_map.size())
-    # print(ds[0])
+    # loader = data.DataLoader(ds, batch_size=4, shuffle=False, num_workers=4)
+    # for image, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map in loader:
+    #     print(image.size(), train_mask.size(), tr_mask.size(), tcl_mask.size(), radius_map.size(), sin_map.size(), cos_map.size())
+
+    for i in range(len(ds)):
+        print(i, )
+        ds[i]
