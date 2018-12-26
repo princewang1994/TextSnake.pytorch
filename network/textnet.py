@@ -23,6 +23,7 @@ class TextNet(nn.Module):
     def __init__(self, backbone='vgg', output_channel=7):
         super().__init__()
 
+        self.backbone_name = backbone
         if backbone == 'vgg':
             self.backbone = VGG16()
         elif backbone == 'resnet':

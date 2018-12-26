@@ -41,23 +41,22 @@ class BaseTrainOptions(object):
         self.parser.add_argument('--input_channel', default=1, type=int, help='number of input channels' )
         self.parser.add_argument('--pretrain', default=False, type=str2bool, help='Pretrained AutoEncoder model')
         self.parser.add_argument('--verbose', '-v', default=True, type=str2bool, help='Whether to output debug info')
+        self.parser.add_argument('--viz', action='store_true', help='Whether to output debug info')
 
         # train opts
         self.parser.add_argument('--start_iter', default=0, type=int, help='Begin counting iterations starting from this value (should be used with resume)')
-        self.parser.add_argument('--epoch', default=100, type=int, help='Max epochs')
+        self.parser.add_argument('--max_epoch', default=100, type=int, help='Max epochs')
         self.parser.add_argument('--max_iters', default=50000, type=int, help='Number of training iterations')
         self.parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float, help='initial learning rate')
-        self.parser.add_argument('--margin_w', default=0.1, type=float, help='margin_loss weight')
-        self.parser.add_argument('--recon_w', default=1.0, type=float, help='margin_loss weight')
         self.parser.add_argument('--lr_adjust', default='fix', choices=['fix', 'poly'], type=str, help='Learning Rate Adjust Strategy')
         self.parser.add_argument('--stepvalues', default=[], nargs='+', type=int, help='# of iter to change lr')
         self.parser.add_argument('--weight_decay', '--wd', default=0., type=float, help='Weight decay for SGD')
         self.parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD lr')
         self.parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
-        self.parser.add_argument('--batch_size', default=128, type=int, help='Batch size for training')
+        self.parser.add_argument('--batch_size', default=4, type=int, help='Batch size for training')
         self.parser.add_argument('--optim', default='SGD', type=str, choices=['SGD', 'Adam'], help='Optimizer')
         self.parser.add_argument('--save_freq', default=5, type=int, help='save weights every # epoch')
-        self.parser.add_argument('--display_freq', default=100, type=int, help='display training metrics every # iterations')
+        self.parser.add_argument('--display_freq', default=50, type=int, help='display training metrics every # iterations')
         self.parser.add_argument('--val_freq', default=100, type=int, help='do validation every # iterations')
 
         # data args

@@ -1,4 +1,15 @@
 import numpy as np
+import errno
+import os
+
+def mkdirs(newdir):
+    try:
+        if not os.path.exists(newdir):
+            os.makedirs(newdir)
+    except OSError as err:
+        # Reraise the error unless it's about an already existing directory
+        if err.errno != errno.EEXIST or not os.path.isdir(newdir):
+            raise
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -47,8 +58,26 @@ def find_bottom(pts):
             v_next = e[i + 2] - e[i + 1]
             if cos(v_prev, v_next) < -0.7:
                 candidate.append((i % len(pts), (i + 1) % len(pts), norm2(e[i] - e[i + 1])))
-        bottom_idx = np.argsort([length for start, end, length in candidate])[:2]
-        bottoms = [candidate[bottom_idx[0]][:2], candidate[bottom_idx[1]][:2]]
+
+        if len(candidate) != 2 or candidate[0][0] == candidate[1][1] or candidate[0][1] == candidate[1][0]:
+            # if candidate number < 2, or two bottom are joined, select 2 farthest edge
+            mid_list = []
+            for i in range(len(pts)):
+                mid_point = (e[i] + e[(i + 1) % len(pts)]) / 2
+                mid_list.append((i, (i + 1) % len(pts), mid_point))
+
+            dist_list = []
+            for i in range(len(pts)):
+                for j in range(len(pts)):
+                    s1, e1, mid1 = mid_list[i]
+                    s2, e2, mid2 = mid_list[j]
+                    dist = norm2(mid1 - mid2)
+                    dist_list.append((s1, e1, s2, e2, dist))
+            bottom_idx = np.argsort([dist for s1, e1, s2, e2, dist in dist_list])[-2:]
+            bottoms = [dist_list[bottom_idx[0]][:2], dist_list[bottom_idx[1]][:2]]
+        else:
+            bottoms = [candidate[0][:2], candidate[1][:2]]
+
     else:
         d1 = norm2(pts[1] - pts[0]) + norm2(pts[2] - pts[3])
         d2 = norm2(pts[2] - pts[1]) + norm2(pts[0] - pts[3])
@@ -99,11 +128,11 @@ def find_long_edges(points, bottoms):
         end = i % n_pts
         long_edge_2.append((start, end))
         i = (i + 1) % n_pts
-
     return long_edge_1, long_edge_2
 
 
 def split_edge_seqence(points, long_edge, n_parts):
+
     edge_length = [norm2(points[e1] - points[e2]) for e1, e2 in long_edge]
     point_cumsum = np.cumsum([0] + edge_length)
     total_length = sum(edge_length)

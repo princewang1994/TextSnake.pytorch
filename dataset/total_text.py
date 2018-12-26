@@ -50,18 +50,24 @@ class TextInstance(object):
     def __repr__(self):
         return str(self.__dict__)
 
+    def __getitem__(self, item):
+        return getattr(self, item)
+
 
 class TotalText(data.Dataset):
 
-    def __init__(self, data_root, ignore_list, is_training=True, transform=None):
+    def __init__(self, data_root, ignore_list=None, is_training=True, transform=None):
         super().__init__()
         self.data_root = data_root
         self.is_training = is_training
         self.transform = transform
 
-        with open(ignore_list) as f:
-            ignore_list = f.readlines()
-            ignore_list = [line.strip() for line in ignore_list]
+        if ignore_list:
+            with open(ignore_list) as f:
+                ignore_list = f.readlines()
+                ignore_list = [line.strip() for line in ignore_list]
+        else:
+            ignore_list = []
 
         self.image_root = os.path.join(data_root, 'Images', 'Train' if is_training else 'Test')
         self.annotation_root = os.path.join(data_root, 'gt', 'Train' if is_training else 'Test')
@@ -146,7 +152,7 @@ class TotalText(data.Dataset):
         image_id = self.image_list[item]
         image_path = os.path.join(self.image_root, image_id)
 
-        print(image_path)
+        # print(image_path)
 
         if self.polygons[item]:
             polygons = self.polygons[item]
@@ -156,7 +162,6 @@ class TotalText(data.Dataset):
             polygons = self.parse_mat(annotation_path)
 
             for i, polygon in enumerate(polygons):
-                print('instance', i)
                 if polygon.text != '#':
                     polygon.find_bottom_and_sideline()
             self.polygons[item] = polygons
@@ -193,15 +198,18 @@ if __name__ == '__main__':
         size=512, mean=0.5, std=0.5
     )
     ds = TotalText(
-        data_root='/home/prince/ext_data/dataset/test-detection/total-text',
+        data_root='/home/prince/ext_data/dataset/text-detection/total-text',
         ignore_list='/data/prince/project/TextSnake/ignore_list.txt',
         is_training=False,
         transform=transform
     )
+    for i in range(len(ds)):
+        try:
+            image, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map = ds[i]
+        except:
+            print(ds.image_list[i])
+
     # loader = data.DataLoader(ds, batch_size=4, shuffle=False, num_workers=4)
     # for image, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map in loader:
+    #     print()
     #     print(image.size(), train_mask.size(), tr_mask.size(), tcl_mask.size(), radius_map.size(), sin_map.size(), cos_map.size())
-
-    for i in range(len(ds)):
-        print(i, )
-        ds[i]
