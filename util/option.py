@@ -30,14 +30,12 @@ class BaseTrainOptions(object):
         self.parser.add_argument('--resume', default=None, type=str, help='Path to target resume checkpoint')
         self.parser.add_argument('--num_workers', default=8, type=int, help='Number of workers used in dataloading')
         self.parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to train model')
-        self.parser.add_argument('--gpu_id', default=0, type=int, help='GPU ID Use to train/test model')
-        self.parser.add_argument('--save_folder', default='save/', help='Path to save checkpoint models')
-        self.parser.add_argument('--img_root', default='../data/', type=str, help='Image root')
+        self.parser.add_argument('--save_dir', default='./save/', help='Path to save checkpoint models')
+        self.parser.add_argument('--vis_dir', default='./vis/', help='Path to save visualization images')
         self.parser.add_argument('--train_csv', default='../data/train.csv', type=str, help='Path of training label files')
         self.parser.add_argument('--val_csv', default='../data/val.csv', type=str, help='Path of validation label files')
         self.parser.add_argument('--loss', default='CrossEntropyLoss', type=str, help='Training Loss')
         self.parser.add_argument('--soft_ce', default=True, type=str2bool, help='Use SoftCrossEntropyLoss')
-        self.parser.add_argument('--num_classes', default=10, type=int, help='# class + bg' )
         self.parser.add_argument('--input_channel', default=1, type=int, help='number of input channels' )
         self.parser.add_argument('--pretrain', default=False, type=str2bool, help='Pretrained AutoEncoder model')
         self.parser.add_argument('--verbose', '-v', default=True, type=str2bool, help='Whether to output debug info')
@@ -45,7 +43,7 @@ class BaseTrainOptions(object):
 
         # train opts
         self.parser.add_argument('--start_iter', default=0, type=int, help='Begin counting iterations starting from this value (should be used with resume)')
-        self.parser.add_argument('--max_epoch', default=100, type=int, help='Max epochs')
+        self.parser.add_argument('--max_epoch', default=200, type=int, help='Max epochs')
         self.parser.add_argument('--max_iters', default=50000, type=int, help='Number of training iterations')
         self.parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float, help='initial learning rate')
         self.parser.add_argument('--lr_adjust', default='fix', choices=['fix', 'poly'], type=str, help='Learning Rate Adjust Strategy')
@@ -61,10 +59,11 @@ class BaseTrainOptions(object):
 
         # data args
         self.parser.add_argument('--rescale', type=float, default=255.0, help='rescale factor')
-        self.parser.add_argument('--label_weights', type=float, default=(1.0, 1.0), nargs='+', help='weight of labels')
         self.parser.add_argument('--means', type=int, default=(0.485, 0.456, 0.406), nargs='+', help='mean')
         self.parser.add_argument('--stds', type=int, default=(0.229, 0.224, 0.225), nargs='+', help='std')
         self.parser.add_argument('--input_size', default=512, type=int, help='model input size')
+
+        self.initialize()
 
 
     def parse(self, fixed=None):
@@ -81,10 +80,6 @@ class BaseTrainOptions(object):
         # Parse options
         self.args = self.parse(fixed)
 
-        print('--------------Options Log-------------')
-        print(arg2str(self.args))
-        print('--------------Options End-------------')
-
         # Setting default torch Tensor type
         if self.args.cuda and torch.cuda.is_available():
             torch.set_default_tensor_type('torch.cuda.FloatTensor')
@@ -93,11 +88,11 @@ class BaseTrainOptions(object):
             torch.set_default_tensor_type('torch.FloatTensor')
 
         # Create weights saving directory
-        if not os.path.exists(self.args.save_folder):
-            os.mkdir(self.args.save_folder)
+        if not os.path.exists(self.args.save_dir):
+            os.mkdir(self.args.save_dir)
 
         # Create weights saving directory of target model
-        model_save_path = os.path.join(self.args.save_folder, self.args.exp_name)
+        model_save_path = os.path.join(self.args.save_dir, self.args.exp_name)
         print('model save path:', model_save_path)
         if not os.path.exists(model_save_path):
             os.mkdir(model_save_path)

@@ -4,6 +4,7 @@ import os
 import torch.utils.data as data
 import scipy.io as io
 import numpy as np
+from util.config import config as cfg
 from skimage.draw import polygon as drawpoly
 from util.misc import find_bottom, find_long_edges, split_edge_seqence, \
     norm2, vector_cos, vector_sin
@@ -180,7 +181,7 @@ class TotalText(data.Dataset):
 
         for i, polygon in enumerate(polygons):
             if polygon.text != '#':
-                sideline1, sideline2, center_points, radius = polygon.disk_cover()
+                sideline1, sideline2, center_points, radius = polygon.disk_cover(n_disk=cfg.n_disk)
                 self.make_text_center_line(sideline1, sideline2, center_points, radius, tcl_mask, radius_map, sin_map, cos_map)
         tr_mask, train_mask = self.make_text_region(image, polygons)
         # to pytorch channel sequence

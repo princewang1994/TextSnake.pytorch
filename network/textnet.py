@@ -24,16 +24,17 @@ class TextNet(nn.Module):
         super().__init__()
 
         self.backbone_name = backbone
+        self.output_channel = output_channel
+
         if backbone == 'vgg':
             self.backbone = VGG16()
+            self.deconv5 = nn.ConvTranspose2d(512, 512, kernel_size=4, stride=2, padding=1)
+            self.merge4 = Upsample(512 + 512, 256)
+            self.merge3 = Upsample(256 + 256, 128)
+            self.merge2 = Upsample(128 + 128, 64)
+            self.merge1 = Upsample(64 + 64, self.output_channel)
         elif backbone == 'resnet':
             pass
-        self.output_channel = output_channel
-        self.deconv5 = nn.ConvTranspose2d(512, 512, kernel_size=4, stride=2, padding=1)
-        self.merge4 = Upsample(512 + 512, 256)
-        self.merge3 = Upsample(256 + 256, 128)
-        self.merge2 = Upsample(128 + 128, 64)
-        self.merge1 = Upsample(64 + 64, self.output_channel)
 
     def forward(self, x):
         C1, C2, C3, C4, C5 = self.backbone(x)

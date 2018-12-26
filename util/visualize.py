@@ -6,10 +6,10 @@ from util.config import config as cfg
 
 def visualize_network_output(output, tr_mask, tcl_mask, prefix):
 
-    tr_pred = torch.softmax(output[:, :2], dim=1)
+    tr_pred = output[:, :2]
     tr_score, tr_predict = tr_pred.max(dim=1)
 
-    tcl_pred = torch.softmax(output[:, 2:4], dim=1)
+    tcl_pred = output[:, 2:4]
     tcl_score, tcl_predict = tcl_pred.max(dim=1)
 
     tr_predict = tr_predict.cpu().numpy()

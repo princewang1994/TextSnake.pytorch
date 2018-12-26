@@ -26,4 +26,9 @@ if __name__ == '__main__':
     import torch
     input = torch.randn((4, 3, 512, 512))
     net = VGG16()
-    net(input)
+    C1, C2, C3, C4, C5 = net(input)
+    print(C1.size())
+    print(C2.size())
+    print(C3.size())
+    print(C4.size())
+    print(C5.size())

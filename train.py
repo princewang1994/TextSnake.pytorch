@@ -1,20 +1,21 @@
-import time
 import os
-import torch
-import torch.utils.data as data
-import torch.backends.cudnn as cudnn
+import time
 
+import torch
+import torch.backends.cudnn as cudnn
+import torch.utils.data as data
 from torch.optim import lr_scheduler
 
-from util.misc import AverageMeter
 from dataset.total_text import TotalText
-from network.textnet import TextNet
 from network.loss import TextLoss
-from util.misc import mkdirs
+from network.textnet import TextNet
 from util.augmentation import BaseTransform
-from util.config import config as cfg, update_config
+from util.config import config as cfg, update_config, print_config
+from util.misc import AverageMeter
+from util.misc import mkdirs, to_device
 from util.option import BaseTrainOptions
 from util.visualize import visualize_network_output
+
 
 def save_model(model, epoch, lr):
 
@@ -44,14 +45,12 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch):
     for i, (img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map) in enumerate(train_loader):
         data_time.update(time.time() - end)
 
-        if cfg.cuda is not None:
-            img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map = \
-                img.cuda(), train_mask.cuda(), tr_mask.cuda(), tcl_mask.cuda(), radius_map.cuda(), sin_map.cuda(), cos_map.cuda()
+        img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map = to_device(
+            img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map)
 
         output = model(img)
         tr_loss, tcl_loss, sin_loss, cos_loss, radii_loss = \
             criterion(output, tr_mask, tcl_mask, sin_map, cos_map, radius_map, train_mask)
-
         loss = tr_loss + tcl_loss + sin_loss + cos_loss + radii_loss
 
         # backward
@@ -66,7 +65,7 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch):
         end = time.time()
 
         if cfg.viz and i < cfg.vis_num:
-            visualize_network_output(output, tr_mask, tcl_mask, prefix='batch_{}'.format(i))
+            visualize_network_output(output, tr_mask, tcl_mask, prefix='train_{}'.format(i))
 
         if i % cfg.display_freq == 0:
             print('Epoch: [ {} ][ {:03d} / {:03d} ] - Loss: {:.4f} - tr_loss: {:.4f} - tcl_loss: {:.4f} - sin_loss: {:.4f} - cos_loss: {:.4f} - radii_loss: {:.4f}'.format(
@@ -77,27 +76,26 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch):
 
     print('Training Loss: {}'.format(losses.avg))
 
-def validation(model, valid_loader, criterion):
 
-    model.eval()
+def validation(model, valid_loader, criterion):
+    # model.eval()
+    model.train()
     losses = AverageMeter()
 
     for i, (img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map) in enumerate(valid_loader):
 
-        if cfg.cuda is not None:
-            img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map = \
-                img.cuda(), train_mask.cuda(), tr_mask.cuda(), tcl_mask.cuda(), radius_map.cuda(), sin_map.cuda(), cos_map.cuda()
+        img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map = to_device(
+            img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map)
 
         output = model(img)
+
         tr_loss, tcl_loss, sin_loss, cos_loss, radii_loss = \
             criterion(output, tr_mask, tcl_mask, sin_map, cos_map, radius_map, train_mask)
-
         loss = tr_loss + tcl_loss + sin_loss + cos_loss + radii_loss
-
         losses.update(loss.item())
 
-        if cfg.viz:
-            pass
+        if cfg.viz and i < cfg.vis_num:
+            visualize_network_output(output, tr_mask, tcl_mask, prefix='val_{}'.format(i))
 
         if i % cfg.display_freq == 0:
             print(
@@ -132,8 +130,10 @@ def main():
     # Model
     model = TextNet()
     # model = nn.DataParallel(model, device_ids=cfg.gpu_ids)
-    model = model.cuda()
-    cudnn.benchmark = True
+
+    model = model.to(cfg.device)
+    if cfg.cuda:
+        cudnn.benchmark = True
 
     criterion = TextLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr)
@@ -150,14 +150,10 @@ def main():
 if __name__ == "__main__":
     # parse arguments
     option = BaseTrainOptions()
-    args = option.parse()
+    args = option.initialize()
+
     update_config(cfg, args)
+    print_config(cfg)
 
-    print('==========Options============')
-    print(cfg)
-    print('=============End=============')
-
-    mkdirs(cfg.vis_dir)
-    mkdirs(cfg.save_dir)
     # main
     main()

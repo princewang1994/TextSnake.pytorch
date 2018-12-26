@@ -1,6 +1,10 @@
 import numpy as np
 import errno
 import os
+from util.config import config as cfg
+
+def to_device(*tensors):
+    return (t.to(cfg.device) for t in tensors)
 
 def mkdirs(newdir):
     try:
