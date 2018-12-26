@@ -1,11 +1,11 @@
-import os
 import copy
 import cv2
+import os
 import torch.utils.data as data
 import scipy.io as io
 import numpy as np
 from skimage.draw import polygon as drawpoly
-from util import find_bottom, find_long_edges, split_edge_seqence, \
+from util.misc import find_bottom, find_long_edges, split_edge_seqence, \
     norm2, vector_cos, vector_sin
 
 from dataset.data_util import pil_load_img
@@ -74,7 +74,7 @@ class TotalText(data.Dataset):
         self.image_list = os.listdir(self.image_root)
         self.image_list = list(filter(lambda img: img.replace('.jpg', '') not in ignore_list, self.image_list))
         self.annotation_list = ['poly_gt_{}.mat'.format(img_name.replace('.jpg', '')) for img_name in self.image_list]
-        self.polygons = [None] * len(self.image_list)
+        self.polygons = [None] * len(self.image_list)  # polygon cache
 
     def parse_mat(self, mat_path):
         """
@@ -193,7 +193,7 @@ class TotalText(data.Dataset):
 
 if __name__ == '__main__':
     import os
-    from augmentation import BaseTransform
+    from util.augmentation import BaseTransform
     transform = BaseTransform(
         size=512, mean=0.5, std=0.5
     )

@@ -1,4 +1,5 @@
 from easydict import EasyDict
+import torch
 
 config = EasyDict()
 
@@ -18,8 +19,11 @@ config.cuda = True
 
 config.vis_dir = './vis'
 
+config.vis_num = 3
+
 config.save_dir = './save'
 
 def update_config(config, extra_config):
     for k, v in vars(extra_config).items():
         config[k] = v
+    config.device = torch.device('cuda') if config.cuda else torch.device('cpu')

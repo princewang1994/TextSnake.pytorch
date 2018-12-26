@@ -6,16 +6,23 @@ import torch.backends.cudnn as cudnn
 
 from torch.optim import lr_scheduler
 
-from util import AverageMeter
+from util.misc import AverageMeter
 from dataset.total_text import TotalText
 from network.textnet import TextNet
-from augmentation import BaseTransform
-from config import config as cfg, update_config
 from network.loss import TextLoss
-from option import BaseTrainOptions
+from util.misc import mkdirs
+from util.augmentation import BaseTransform
+from util.config import config as cfg, update_config
+from util.option import BaseTrainOptions
+from util.visualize import visualize_network_output
 
 def save_model(model, epoch, lr):
-    save_path = os.path.join(cfg.save_dir, cfg.exp_name, 'textsnake_{}_{}.pth'.format(model.backbone_name, epoch))
+
+    save_dir = os.path.join(cfg.save_dir, cfg.exp_name)
+    if not os.path.exists(save_dir):
+        mkdirs(save_dir)
+
+    save_path = os.path.join(save_dir, 'textsnake_{}_{}.pth'.format(model.backbone_name, epoch))
     print('Saving to {}.'.format(save_path))
     state_dict = {
         'lr': lr,
@@ -58,6 +65,9 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch):
         batch_time.update(time.time() - end)
         end = time.time()
 
+        if cfg.viz and i < cfg.vis_num:
+            visualize_network_output(output, tr_mask, tcl_mask, prefix='batch_{}'.format(i))
+
         if i % cfg.display_freq == 0:
             print('Epoch: [ {} ][ {:03d} / {:03d} ] - Loss: {:.4f} - tr_loss: {:.4f} - tcl_loss: {:.4f} - sin_loss: {:.4f} - cos_loss: {:.4f} - radii_loss: {:.4f}'.format(
                 epoch, i, len(train_loader), loss.item(), tr_loss.item(), tcl_loss.item(), sin_loss.item(), cos_loss.item(), radii_loss.item())
@@ -85,6 +95,9 @@ def validation(model, valid_loader, criterion):
         loss = tr_loss + tcl_loss + sin_loss + cos_loss + radii_loss
 
         losses.update(loss.item())
+
+        if cfg.viz:
+            pass
 
         if i % cfg.display_freq == 0:
             print(
@@ -135,8 +148,6 @@ def main():
     print('End.')
 
 if __name__ == "__main__":
-    from util import mkdirs
-
     # parse arguments
     option = BaseTrainOptions()
     args = option.parse()
