@@ -25,17 +25,16 @@ class Compose(object):
 
 
 class RandomMirror(object):
-    def __init__(self, flip_index):
-        self.flip_index = flip_index
+    def __init__(self):
+        pass
 
-    def __call__(self, image, pts=None):
-        _, width, _ = image.shape
+    def __call__(self, image, polygons=None):
         if np.random.randint(2):
             image = np.ascontiguousarray(image[:, ::-1])
-            pts = pts.copy()
-            pts[:, 0] = width - pts[:, 0]
-            pts = pts[self.flip_index]
-        return image, pts
+            _, width, _ = image.shape
+            for polygon in polygons:
+                polygon.points[:, 0] = width - polygon.points[:, 0]
+        return image, polygons
 
 
 class AugmentColor(object):
@@ -319,20 +318,14 @@ class Resize(object):
 
 
 class Augmentation(object):
-    def __init__(self, size, flip_index, mean, std, scale=(0.3, 1.0), ratio=(3. / 4., 4. / 3.)):
+
+    def __init__(self, size, mean, std):
         self.size = size
-        self.scale = scale
-        self.ratio = ratio
         self.mean = mean
         self.std = std
-        self.flip_index = flip_index
         self.augmentation = Compose([
-            RandomBrightness(16),
-            AugmentColor(),
-            RandomMirror(flip_index),
-            Padding(),
-            RandomResizedLimitCrop(size, scale, ratio),
-            Rotate(30),
+            Resize(size),
+            RandomMirror(),
             Normalize(mean, std)
         ])
 

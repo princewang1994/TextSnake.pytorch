@@ -147,29 +147,24 @@ class TotalText(data.Dataset):
             self.fill_polygon(sin_map, polygon, value=sin_theta)
             self.fill_polygon(cos_map, polygon, value=cos_theta)
 
-
     def __getitem__(self, item):
 
         image_id = self.image_list[item]
         image_path = os.path.join(self.image_root, image_id)
 
         # print(image_path)
+        annotation_id = self.annotation_list[item]
+        annotation_path = os.path.join(self.annotation_root, annotation_id)
+        polygons = self.parse_mat(annotation_path)
 
-        if self.polygons[item]:
-            polygons = self.polygons[item]
-        else:
-            annotation_id = self.annotation_list[item]
-            annotation_path = os.path.join(self.annotation_root, annotation_id)
-            polygons = self.parse_mat(annotation_path)
-
-            for i, polygon in enumerate(polygons):
-                if polygon.text != '#':
-                    polygon.find_bottom_and_sideline()
-            self.polygons[item] = polygons
+        for i, polygon in enumerate(polygons):
+            if polygon.text != '#':
+                polygon.find_bottom_and_sideline()
 
         # print(image_path, annotation_path)
         # Read image data
         image = pil_load_img(image_path)
+        H, W, _ = image.shape
 
         if self.transform:
             image, polygons = self.transform(image, copy.copy(polygons))
@@ -187,7 +182,13 @@ class TotalText(data.Dataset):
         # to pytorch channel sequence
         image = image.transpose(2, 0, 1)
 
-        return image, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map
+        meta = {
+            'image_id': image_id,
+            'image_path': image_path,
+            'Height': H,
+            'Width': W
+        }
+        return image, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map, meta
 
     def __len__(self):
         return len(self.image_list)
@@ -195,22 +196,20 @@ class TotalText(data.Dataset):
 if __name__ == '__main__':
     import os
     from util.augmentation import BaseTransform
+
     transform = BaseTransform(
         size=512, mean=0.5, std=0.5
     )
-    ds = TotalText(
-        data_root='/home/prince/ext_data/dataset/text-detection/total-text',
-        ignore_list='/data/prince/project/TextSnake/ignore_list.txt',
-        is_training=False,
+    trainset = TotalText(
+        data_root='data/total-text',
+        ignore_list='./ignore_list.txt',
+        is_training=True,
         transform=transform
     )
-    for i in range(len(ds)):
-        try:
-            image, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map = ds[i]
-        except:
-            print(ds.image_list[i])
 
-    # loader = data.DataLoader(ds, batch_size=4, shuffle=False, num_workers=4)
-    # for image, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map in loader:
-    #     print()
-    #     print(image.size(), train_mask.size(), tr_mask.size(), tcl_mask.size(), radius_map.size(), sin_map.size(), cos_map.size())
+    trainset[121]
+
+    trainset[121]
+    #
+    # ds[121]
+    # loader = data.DataLoader(trainset, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.num_workers)

@@ -63,9 +63,6 @@ class BaseTrainOptions(object):
         self.parser.add_argument('--stds', type=int, default=(0.229, 0.224, 0.225), nargs='+', help='std')
         self.parser.add_argument('--input_size', default=512, type=int, help='model input size')
 
-        self.initialize()
-
-
     def parse(self, fixed=None):
 
         if fixed is not None:
@@ -93,7 +90,7 @@ class BaseTrainOptions(object):
 
         # Create weights saving directory of target model
         model_save_path = os.path.join(self.args.save_dir, self.args.exp_name)
-        print('model save path:', model_save_path)
+
         if not os.path.exists(model_save_path):
             os.mkdir(model_save_path)
 

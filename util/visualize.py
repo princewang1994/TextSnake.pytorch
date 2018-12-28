@@ -31,3 +31,13 @@ def visualize_network_output(output, tr_mask, tcl_mask, prefix):
         show = cv2.resize(show, (512, 512))
         path = os.path.join(cfg.vis_dir, '{}_{}.png'.format(prefix, i))
         cv2.imwrite(path, show)
+
+
+def visualize_detection(image, detect_result, image_id):
+    image_show = image.copy()
+    image_show = np.ascontiguousarray(image_show[:, :, ::-1])
+    for tcl in detect_result:
+        for x, y, r in tcl:
+            cv2.circle(image_show, (int(x), int(y)), int(r), (0, 0, 255), 1)
+    path = os.path.join(cfg.vis_dir, image_id)
+    cv2.imwrite(path, image_show)

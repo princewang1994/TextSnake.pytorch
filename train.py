@@ -9,7 +9,7 @@ from torch.optim import lr_scheduler
 from dataset.total_text import TotalText
 from network.loss import TextLoss
 from network.textnet import TextNet
-from util.augmentation import BaseTransform
+from util.augmentation import BaseTransform, Augmentation
 from util.config import config as cfg, update_config, print_config
 from util.misc import AverageMeter
 from util.misc import mkdirs, to_device
@@ -42,7 +42,7 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch):
     end = time.time()
     model.train()
 
-    for i, (img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map) in enumerate(train_loader):
+    for i, (img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map, meta) in enumerate(train_loader):
         data_time.update(time.time() - end)
 
         img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map = to_device(
@@ -78,11 +78,11 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch):
 
 
 def validation(model, valid_loader, criterion):
-    # model.eval()
-    model.train()
+
+    model.eval()
     losses = AverageMeter()
 
-    for i, (img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map) in enumerate(valid_loader):
+    for i, (img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map, meta) in enumerate(valid_loader):
 
         img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map = to_device(
             img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map)
@@ -105,23 +105,21 @@ def validation(model, valid_loader, criterion):
             )
     print('Validation Loss: {}'.format(losses.avg))
 
+
 def main():
 
-    transform = BaseTransform(
-        size=cfg.input_size, mean=cfg.means, std=cfg.stds
-    )
     trainset = TotalText(
         data_root='data/total-text',
         ignore_list='./ignore_list.txt',
         is_training=True,
-        transform=transform
+        transform=Augmentation(size=cfg.input_size, mean=cfg.means, std=cfg.stds)
     )
 
     valset = TotalText(
         data_root='data/total-text',
         ignore_list=None,
         is_training=False,
-        transform=transform
+        transform=BaseTransform(size=cfg.input_size, mean=cfg.means, std=cfg.stds)
     )
 
     train_loader = data.DataLoader(trainset, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.num_workers)

@@ -1,6 +1,7 @@
 import numpy as np
 import errno
 import os
+import cv2
 from util.config import config as cfg
 
 def to_device(*tensors):
@@ -14,6 +15,26 @@ def mkdirs(newdir):
         # Reraise the error unless it's about an already existing directory
         if err.errno != errno.EEXIST or not os.path.isdir(newdir):
             raise
+
+
+def fill_hole(input_mask):
+    h, w = input_mask.shape
+    canvas = np.zeros((h + 2, w + 2), np.uint8)
+    canvas[1:h + 1, 1:w + 1] = input_mask.copy()
+
+    mask = np.zeros((h + 4, w + 4), np.uint8)
+
+    cv2.floodFill(canvas, mask, (0, 0), 1)
+    canvas = canvas[1:h + 1, 1:w + 1].astype(np.bool)
+
+    return (~canvas | input_mask.astype(np.uint8))
+
+
+def regularize_sin_cos(sin, cos):
+    # regularization
+    scale = np.sqrt(1.0 / (sin ** 2 + cos ** 2))
+    return sin * scale, cos * scale
+
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
