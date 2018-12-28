@@ -4,9 +4,9 @@ A PyTorch implement of **TextSnake: A Flexible Representation for Detecting Text
 
 - Paper link: [arXiv:1807.01544](https://arxiv.org/abs/1807.01544)
 
-- Github: [princewang1994/TextSnake.pytorch]()
+- Github: [princewang1994/TextSnake.pytorch](https://github.com/princewang1994/TextSnake.pytorch)
 
-![](http://princepicbed.oss-cn-beijing.aliyuncs.com/blog_20181228194823.png)
+![](http://princepicbed.oss-cn-beijing.aliyuncs.com/blog_20181228201251.png)
 
 ## Paper
 
