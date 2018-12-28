@@ -206,10 +206,3 @@ if __name__ == '__main__':
         is_training=True,
         transform=transform
     )
-
-    trainset[121]
-
-    trainset[121]
-    #
-    # ds[121]
-    # loader = data.DataLoader(trainset, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.num_workers)

@@ -13,7 +13,7 @@ from util.augmentation import BaseTransform, Augmentation
 from util.config import config as cfg, update_config, print_config
 from util.misc import AverageMeter
 from util.misc import mkdirs, to_device
-from util.option import BaseTrainOptions
+from util.option import BaseOptions
 from util.visualize import visualize_network_output
 
 
@@ -147,7 +147,7 @@ def main():
 
 if __name__ == "__main__":
     # parse arguments
-    option = BaseTrainOptions()
+    option = BaseOptions()
     args = option.initialize()
 
     update_config(cfg, args)

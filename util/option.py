@@ -17,7 +17,7 @@ def arg2str(args):
 
     return option_str
 
-class BaseTrainOptions(object):
+class BaseOptions(object):
 
     def __init__(self):
 
@@ -62,6 +62,9 @@ class BaseTrainOptions(object):
         self.parser.add_argument('--means', type=int, default=(0.485, 0.456, 0.406), nargs='+', help='mean')
         self.parser.add_argument('--stds', type=int, default=(0.229, 0.224, 0.225), nargs='+', help='std')
         self.parser.add_argument('--input_size', default=512, type=int, help='model input size')
+
+        # test args
+        self.parser.add_argument('--checkepoch', default=-1, type=int, help='Load checkpoint number')
 
     def parse(self, fixed=None):
 

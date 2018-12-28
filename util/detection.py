@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from util.misc import fill_hole, regularize_sin_cos
+from util.misc import norm2
 
 class TextDetector(object):
 
@@ -8,21 +9,36 @@ class TextDetector(object):
         self.conf_thresh = conf_thresh
 
     def find_innerpoint(self, cont):
+        """
+        generate an inner point of input polygon using mean of x coordinate by:
+        1. calculate mean of x coordinate(xmean)
+        2. calculate maximum and minimum of y coordinate(ymax, ymin)
+        2. iterate for each y in range (ymin, ymax), find first segment in the polygon
+        3. calculate means of segment
+        :param cont: input polygon
+        :return:
+        """
 
         xmean = cont[:, 0, 0].mean()
         ymin, ymax = cont[:, 0, 1].min(), cont[:, 0, 1].max()
         found = False
         found_y = []
+        #
         for i in np.arange(ymin - 1, ymax + 1, 0.5):
+            # if in_poly > 0, (xmean, i) is in `cont`
             in_poly = cv2.pointPolygonTest(cont, (xmean, i), False)
             if in_poly > 0:
                 found = True
                 found_y.append(i)
+            # first segment found
             if in_poly < 0 and found:
                 break
+
         if len(found_y) > 0:
             return (xmean, np.array(found_y).mean())
-        else: # if cannot find use above method, try each point's neighbor
+
+        # if cannot find using above method, try each point's neighbor
+        else:
             for p in range(len(cont)):
                 point = cont[p, 0]
                 for i in range(-1, 2, 1):
@@ -32,34 +48,45 @@ class TextDetector(object):
                             return test_pt
 
     def centerlize(self, x, y, tangent_cos, tangent_sin, mask, stride=1):
+        """
+        centralizing (x, y) using tangent line and normal line.
+        :return:
+        """
+
+        # calculate normal sin and cos
         normal_cos = -tangent_sin
         normal_sin = tangent_cos
 
+        # find upward
         _x, _y = x, y
         while mask[int(_y), int(_x)]:
             _x = _x + normal_cos * stride
             _y = _y + normal_sin * stride
         end1 = np.array([_x, _y])
 
+        # find downward
         _x, _y = x, y
         while mask[int(_y), int(_x)]:
             _x = _x - normal_cos * stride
             _y = _y - normal_sin * stride
         end2 = np.array([_x, _y])
+
+        # centralizing
         center = (end1 + end2) / 2
 
         return center
 
-    def mask_to_tcl(self, pred_sin, pred_cos, pred_radii, tcl_mask, init_xy, direct=1, max_pts=50):
+    def mask_to_tcl(self, pred_sin, pred_cos, pred_radii, tcl_mask, init_xy, direct=1):
         """
-        :param pred_sin:
-        :param pred_cos:
-        :param tcl_mask:
-        :param init_xy:
-        :param t:
-        :param direct:
+        Iteratively find center line in tcl mask using initial point (x, y)
+        :param pred_sin: predict sin map
+        :param pred_cos: predict cos map
+        :param tcl_mask: predict tcl mask
+        :param init_xy: initial (x, y)
+        :param direct: direction [-1|1]
         :return:
         """
+
         x_init, y_init = init_xy
 
         sin = pred_sin[int(y_init), int(x_init)]
@@ -69,8 +96,9 @@ class TextDetector(object):
         x_shift, y_shift = self.centerlize(x_init, y_init, cos, sin, tcl_mask)
         result = []
 
-        while tcl_mask[int(y_shift), int(x_shift)] and len(result) < max_pts:
-            result.append([x_shift, y_shift, radii])
+        while tcl_mask[int(y_shift), int(x_shift)]:
+
+            result.append(np.array([x_shift, y_shift, radii]))
             x, y = x_shift, y_shift
 
             sin = pred_sin[int(y), int(x)]
@@ -82,11 +110,24 @@ class TextDetector(object):
             cos_c = pred_cos[int(y_c), int(x_c)]
             radii = pred_radii[int(y_c), int(x_c)]
 
-            # shift
+            # shift stride = +/- 0.5 * [sin|cos](theta)
             t = 0.5 * radii
-            x_shift = x_c + cos_c * t * direct
-            y_shift = y_c + sin_c * t * direct
-            # print(x_shift, y_shift)
+            x_shift_pos = x_c + cos_c * t * direct  # positive direction
+            y_shift_pos = y_c + sin_c * t * direct  # positive direction
+            x_shift_neg = x_c - cos_c * t * direct  # negative direction
+            y_shift_neg = y_c - sin_c * t * direct  # negative direction
+
+            # if first point, select positive direction shift
+            if len(result) == 1:
+                x_shift, y_shift = x_shift_pos, y_shift_pos
+            else:
+                # else select point further by second last point
+                dist_pos = norm2(result[-2][:2] - (x_shift_pos, y_shift_pos))
+                dist_neg = norm2(result[-2][:2] - (x_shift_neg, y_shift_neg))
+                if dist_pos > dist_neg:
+                    x_shift, y_shift = x_shift_pos, y_shift_pos
+                else:
+                    x_shift, y_shift = x_shift_neg, y_shift_neg
 
         return result
 
@@ -106,8 +147,11 @@ class TextDetector(object):
         _, conts, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         for cont in conts:
+            # remove small regions
             if cv2.contourArea(cont) < 20:
                 continue
+
+            # find an inner point of polygon
             init = self.find_innerpoint(cont)
 
             if init is None:
@@ -127,20 +171,13 @@ class TextDetector(object):
 
         return all_tcls
 
-    def detect(self, output):
-
-        tr_pred = output[0:2].softmax(dim=0).data.cpu().numpy()
-        tcl_pred = output[2:4].softmax(dim=0).data.cpu().numpy()
+    def detect(self, tr_pred, tcl_pred, sin_pred, cos_pred, radii_pred):
 
         # multiply TR and TCL
         tcl = tcl_pred * tr_pred
 
         # thresholding
         tcl_pred_mask = tcl[1] > self.conf_thresh
-
-        sin_pred = output[4].data.cpu().numpy()
-        cos_pred = output[5].data.cpu().numpy()
-        radii_pred = output[6].data.cpu().numpy()
 
         # regularize
         sin_pred, cos_pred = regularize_sin_cos(sin_pred, cos_pred)
