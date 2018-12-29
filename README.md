@@ -50,7 +50,7 @@ To run this repo successfully, it is highly recommanded with:
 - **Linux (Ubuntu 16.04)**
 - **Python3.6**
 - **Anaconda3**
-- **NVIDIA GPU(with 8G or larger GPU memroy)**
+- **NVIDIA GPU(with 8G or larger GPU memroy for training, 2G for inference)**
 
 (I haven't test it on other Python version.)
 
@@ -65,6 +65,10 @@ git clone https://github.com/princewang1994/TextSnake.pytorch.git
 $ cd $TEXTSNAKE
 $ pip install -r requirements.txt
 ```
+
+## Data preparation
+
+* `Total-Text`: follow the [](dataset/total_text/README.md)
 
 ## Training
 
@@ -113,7 +117,8 @@ other options can be show by run `python train.py -h`
 
 ## What is comming
 
-- [ ] more dataset suport: [ICDAR15/[SynthText](https://github.com/ankush-me/SynthText)]
+- [ ] Pretrained model upload (soon)
+- [ ] More dataset suport: [ICDAR15/[SynthText](https://github.com/ankush-me/SynthText)]
 - [ ] Metric computing
 - [ ] Cython/C++ accelerate core functions
 

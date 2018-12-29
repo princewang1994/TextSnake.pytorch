@@ -110,7 +110,7 @@ def main():
 
     trainset = TotalText(
         data_root='data/total-text',
-        ignore_list='./ignore_list.txt',
+        ignore_list='./dataset/total_text/ignore_list.txt',
         is_training=True,
         transform=Augmentation(size=cfg.input_size, mean=cfg.means, std=cfg.stds)
     )
