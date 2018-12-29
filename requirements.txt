@@ -1,9 +1,6 @@
-torchvision==0.2.1
-torch==0.4.1.post2
 easydict==1.8
-opencv_python==3.4.3.18
+opencv-python
 scikit_image==0.14.0
 numpy==1.15.1
-scipy==1.1.0
+scipy
 Pillow==5.3.0
-skimage==0.0
