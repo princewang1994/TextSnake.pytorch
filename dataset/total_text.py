@@ -99,6 +99,23 @@ class TotalText(data.Dataset):
             polygon.append(TextInstance(pts, ori, text))
         return polygon
 
+
+    def parse_txt(self, txt_path):
+        """
+        .txt file parser
+        :param txt_path: (str), txt file path
+        :return: (list), TextInstance
+        """
+        polygon = []
+        with open(txt_path)as fr:
+            for line in fr.readlines():
+                line_list = line.strip().split(",")
+                text = np.str_(line[-1])
+                ori = np.str_('m')
+                pts = np.asarray(line_list[:8]).reshape((4, 2)).astype(np.int32)
+                polygon.append(TextInstance(pts, ori, text))
+        return polygon
+
     def make_text_region(self, image, polygons):
 
         tr_mask = np.zeros(image.shape[:2], np.uint8)
