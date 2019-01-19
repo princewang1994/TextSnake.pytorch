@@ -14,6 +14,38 @@ from util.config import config as cfg, update_config, print_config
 from util.misc import to_device
 from util.option import BaseOptions
 from util.visualize import visualize_detection
+import cv2
+
+def result2polygon(image, result):
+    """ convert geometric info(center_x, center_y, radii) into contours
+    :param result: (list), each with (n, 3), 3 denotes (x, y, radii)
+    :return: (np.ndarray list), polygon format contours
+    """
+    mask = np.zeros(image.shape[:2], dtype=np.uint8)
+    for disk in result:
+        for x, y, r in disk:
+            cv2.circle(mask, (int(x), int(y)), int(r), (1), -1)
+
+    _, conts, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    conts = [cont[:, 0, :] for cont in conts]
+    return conts
+
+
+def rescale_result(image, contours, H, W):
+    ori_H, ori_W = image.shape[:2]
+    image = cv2.resize(image, (W, H))
+    for cont in contours:
+        cont[:, 0] = (cont[:, 0] * W / ori_W).astype(int)
+        cont[:, 1] = (cont[:, 1] * H / ori_H).astype(int)
+    return image, contours
+
+
+def write_to_file(contours, file_path):
+    with open(file_path, 'w') as f:
+        for cont in contours:
+            cont = cont.flatten().astype(str).tolist()
+            cont = ','.join(cont)
+            f.write(cont + '\n')
 
 
 def load_model(model, model_path):
@@ -47,7 +79,11 @@ def inference(model, detector, test_loader):
             # visualization
             img_show = img[idx].permute(1, 2, 0).cpu().numpy()
             img_show = ((img_show * cfg.stds + cfg.means) * 255).astype(np.uint8)
-            visualize_detection(img_show, tr_pred[1], tcl_pred[1], batch_result[idx], '{}_{}'.format(i, meta['image_id'][idx]))
+            contours = result2polygon(img_show, batch_result[idx])
+            H, W = meta['Height'][idx].item(), meta['Width'][idx].item()
+            img_show, contours = rescale_result(img_show, contours, H, W)
+            write_to_file(contours, os.path.join(cfg.output_dir, meta['image_id'][idx].replace('jpg', 'txt')))
+            visualize_detection(img_show, tr_pred[1], tcl_pred[1], contours, '{}_{}'.format(i, meta['image_id'][idx]))
 
 
 def main():

@@ -171,18 +171,4 @@ class TextDataset(data.Dataset):
         return image, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map, meta
 
     def __len__(self):
-        return len(self.image_list)
-
-if __name__ == '__main__':
-    import os
-    from util.augmentation import BaseTransform
-
-    transform = BaseTransform(
-        size=512, mean=0.5, std=0.5
-    )
-    trainset = TextDataset(
-        data_root='data/total-text',
-        ignore_list='./ignore_list.txt',
-        is_training=True,
-        transform=transform
-    )
+        raise NotImplementedError()

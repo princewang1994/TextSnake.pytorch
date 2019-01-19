@@ -21,6 +21,8 @@ config.vis_num = 3
 
 config.n_disk = 15
 
+config.output_dir = 'output'
+
 
 def update_config(config, extra_config):
     for k, v in vars(extra_config).items():
