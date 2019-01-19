@@ -34,7 +34,7 @@ def inference(model, detector, test_loader):
         output = model(img)
 
         for idx in range(img.size(0)):
-            print('detect {} images: {}.'.format(idx, meta['image_id'][idx]))
+            print('detect {} / {} images: {}.'.format(i, len(test_loader), meta['image_id'][idx]))
 
             tr_pred = output[idx, 0:2].softmax(dim=0).data.cpu().numpy()
             tcl_pred = output[idx, 2:4].softmax(dim=0).data.cpu().numpy()

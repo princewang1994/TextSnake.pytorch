@@ -138,7 +138,7 @@ class TextDetector(object):
         :param sin_pred: output sin map, (512, 512)
         :param cos_pred: output cos map, (512, 512)
         :param radii_pred: output radii map, (512, 512)
-        :return: (list), tcl array: (n, 3) 3 denote (x, y, radii)
+        :return: (list), tcl array: (n, 3), 3 denotes (x, y, radii)
         """
         all_tcls = []
 
