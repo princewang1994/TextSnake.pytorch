@@ -71,14 +71,22 @@ class TotalText(TextDataset):
 
 if __name__ == '__main__':
     import os
-    from util.augmentation import BaseTransform
+    from util.augmentation import BaseTransform, Augmentation
 
-    transform = BaseTransform(
-        size=512, mean=0.5, std=0.5
+    means = (0.485, 0.456, 0.406)
+    stds = (0.229, 0.224, 0.225)
+
+    transform = Augmentation(
+        size=512, mean=means, std=stds
     )
+
     trainset = TotalText(
         data_root='data/total-text',
         ignore_list='./ignore_list.txt',
         is_training=True,
         transform=transform
     )
+
+    for idx in range(len(trainset)):
+        img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map, meta = trainset[idx]
+        print(idx, img.shape)

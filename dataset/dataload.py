@@ -108,7 +108,7 @@ class TextDataset(data.Dataset):
         :param polygon: polygon to draw
         :param value: fill value
         """
-        rr, cc = drawpoly(polygon[:, 1], polygon[:, 0])
+        rr, cc = drawpoly(polygon[:, 1], polygon[:, 0], shape=(cfg.input_size, cfg.input_size))
         mask[rr, cc] = value
 
     def make_text_center_line(self, sideline1, sideline2, center_line, radius, \

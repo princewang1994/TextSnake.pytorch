@@ -46,7 +46,7 @@ class AugmentColor(object):
         self.sigma = 0.1
         self.color_vec = None
 
-    def __call__(self, img, pts):
+    def __call__(self, img, polygons=None):
         color_vec = self.color_vec
         if self.color_vec is None:
             if not self.sigma > 0.0:
@@ -56,7 +56,7 @@ class AugmentColor(object):
 
         alpha = color_vec.astype(np.float32) * self.EV
         noise = np.dot(self.U, alpha.T) * 255
-        return np.clip(img + noise[np.newaxis, np.newaxis, :], 0, 255), pts
+        return np.clip(img + noise[np.newaxis, np.newaxis, :], 0, 255), polygons
 
 
 class RandomContrast(object):
@@ -67,11 +67,11 @@ class RandomContrast(object):
         assert self.lower >= 0, "contrast lower must be non-negative."
 
     # expects float image
-    def __call__(self, image, pts):
+    def __call__(self, image, polygons=None):
         if random.randint(2):
             alpha = random.uniform(self.lower, self.upper)
             image *= alpha
-        return np.clip(image, 0, 255), pts
+        return np.clip(image, 0, 255), polygons
 
 
 class RandomBrightness(object):
@@ -80,12 +80,12 @@ class RandomBrightness(object):
         assert delta <= 255.0
         self.delta = delta
 
-    def __call__(self, image, pts):
+    def __call__(self, image, polygons=None):
         image = image.astype(np.float32)
         if random.randint(2):
             delta = random.uniform(-self.delta, self.delta)
             image += delta
-        return np.clip(image, 0, 255), pts
+        return np.clip(image, 0, 255), polygons
 
 
 class Rotate(object):
@@ -107,21 +107,20 @@ class Rotate(object):
 
         return _x, -_y
 
-    def __call__(self, img, pts=None):
+    def __call__(self, img, polygons=None):
         if np.random.randint(2):
-            return img, pts
+            return img, polygons
         angle = np.random.normal(loc=0.0, scale=0.5) * self.up  # angle 按照高斯分布
         rows, cols = img.shape[0:2]
         M = cv2.getRotationMatrix2D((cols / 2, rows / 2), angle, 1.0)
         img = cv2.warpAffine(img, M, (cols, rows), borderValue=[0, 0, 0])
         center = cols / 2.0, rows / 2.0
-        if pts is not None:
-            x, y = self.rotate(center, pts.copy(), angle)
-            visible = (x > 0) & (x < cols) & (y > 0) & (y < rows)  # 把旋转完图片范围外的点致为不可见
-            vis = pts[:, 2].copy()
-            vis[~visible] = -1
-            pts = np.vstack([x, y, vis]).T
-        return img, pts
+        if polygons is not None:
+            for polygon in polygons:
+                x, y = self.rotate(center, polygon.points, angle)
+                pts = np.vstack([x, y]).T
+                polygon.points = pts
+        return img, polygons
 
 class SquarePadding(object):
 
@@ -326,6 +325,9 @@ class Augmentation(object):
         self.augmentation = Compose([
             Resize(size),
             RandomMirror(),
+            RandomBrightness(),
+            RandomContrast(),
+            Rotate(),
             Normalize(mean, std)
         ])
 
