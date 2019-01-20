@@ -3,19 +3,17 @@
 from os import listdir
 from scipy import io
 import numpy as np
-from skimage.draw import polygon
-from .polygon_wrapper import iou
-from .polygon_wrapper import iod
-from .polygon_wrapper import area_of_intersection
-from .polygon_wrapper import area
+from polygon_wrapper import iod
+from polygon_wrapper import area_of_intersection
+from polygon_wrapper import area
 
 """
 Input format: y0,x0, ..... yn,xn. Each detection is separated by the end of line token ('\n')'
 """
 
-input_dir = '/Users/chngcheekheng/Dropbox/Polygon_Faster_RCNN_extension_rewrite/Run_FineTuning_shrink_db/log/Result/TT/Polygon/0_5/Text'
-gt_dir = '/Users/chngcheekheng/Dropbox/Total_Text/Groundtruth/Polygon/Test'
-fid_path = '/Users/chngcheekheng/Dropbox/Polygon_Faster_RCNN_extension_rewrite/Run_FineTuning_shrink_db/log/Result/TT/Polygon/0_5/Python_Pascal_result_last_check.txt'
+input_dir = 'output'
+gt_dir = 'data/total-text/gt/Test'
+fid_path = 'Python_Pascal_result_last_check.txt'
 
 allInputs = listdir(input_dir)
 
@@ -38,12 +36,12 @@ def gt_reading_mod(gt_dir, gt_id):
 
 def detection_filtering(detections, groundtruths, threshold=0.5):
     for gt_id, gt in enumerate(groundtruths):
-        if (gt[5] == '#') and (gt[1].shape[1] > 1):
-            gt_x = map(int, np.squeeze(gt[1]))
-            gt_y = map(int, np.squeeze(gt[3]))
+        if (gt[5].size == 0 or gt[5] == '#') and (gt[1].shape[1] > 1):
+            gt_x = list(map(int, np.squeeze(gt[1])))
+            gt_y = list(map(int, np.squeeze(gt[3])))
             for det_id, detection in enumerate(detections):
                 detection = detection.split(',')
-                detection = map(int, detection[0:-1])
+                detection = list(map(int, detection[0:-1]))
                 det_y = detection[0::2]
                 det_x = detection[1::2]
                 det_gt_iou = iod(det_x, det_y, gt_x, gt_y)
@@ -74,15 +72,15 @@ global_fp = 0
 global_fn = 0
 global_sigma = []
 global_tau = []
-tr = 0.7
+tr = 0.6
 tp = 0.6
 fsc_k = 0.8
 k = 2
 ###############################################################################
 
-for input_id in allInputs:
+for i, input_id in enumerate(allInputs):
     if (input_id != '.DS_Store'):
-        print(input_id)
+        print(i, input_id)
         detections = input_reading_mod(input_dir, input_id)
         groundtruths = gt_reading_mod(gt_dir, input_id)
         detections = detection_filtering(detections, groundtruths)  # filters detections overlapping with DC area
@@ -91,16 +89,15 @@ for input_id in allInputs:
 
         local_sigma_table = np.zeros((groundtruths.shape[0], len(detections)))
         local_tau_table = np.zeros((groundtruths.shape[0], len(detections)))
-
         for gt_id, gt in enumerate(groundtruths):
             if len(detections) > 0:
                 for det_id, detection in enumerate(detections):
                     detection = detection.split(',')
-                    detection = map(int, detection[:-1])
-                    det_y = detection[0::2]
-                    det_x = detection[1::2]
-                    gt_x = map(int, np.squeeze(gt[1]))
-                    gt_y = map(int, np.squeeze(gt[3]))
+                    detection = list(map(int, detection[:-2]))
+                    det_x = detection[0::2]
+                    det_y = detection[1::2]
+                    gt_x = list(map(int, np.squeeze(gt[1])))
+                    gt_y = list(map(int, np.squeeze(gt[3])))
 
                     local_sigma_table[gt_id, det_id] = sigma_calculation(det_x, det_y, gt_x, gt_y)
                     local_tau_table[gt_id, det_id] = tau_calculation(det_x, det_y, gt_x, gt_y)
@@ -246,38 +243,9 @@ for idx in range(len(global_sigma)):
                                     local_accumulative_recall, local_accumulative_precision,
                                     global_accumulative_recall, global_accumulative_precision,
                                     gt_flag, det_flag)
-    # for det_id in xrange(num_det):
-    #     # skip the following if the detection was matched
-    #     if det_flag[0, det_id] > 0:
-    #         continue
-    #
-    #     non_zero_in_tau = np.where(local_tau_table[:, det_id] > 0)
-    #     num_non_zero_in_tau = non_zero_in_tau[0].shape[0]
-    #
-    #     if num_non_zero_in_tau >= k:
-    #         ####search for all detections that overlaps with this groundtruth
-    #         qualified_sigma_candidates = np.where((local_sigma_table[:, det_id] >= tp) & (gt_flag[0, :] == 0))
-    #         num_qualified_sigma_candidates = qualified_sigma_candidates[0].shape[0]
-    #
-    #         if num_qualified_sigma_candidates == 1:
-    #             if ((local_tau_table[qualified_sigma_candidates, det_id] >= tp) and (local_sigma_table[qualified_sigma_candidates, det_id] >= tr)):
-    #                 #became an one-to-one case
-    #                 global_accumulative_recall = global_accumulative_recall + 1.0
-    #                 global_accumulative_precision = global_accumulative_precision + 1.0
-    #                 local_accumulative_recall = local_accumulative_recall + 1.0
-    #                 local_accumulative_precision = local_accumulative_precision + 1.0
-    #
-    #                 gt_flag[0, qualified_sigma_candidates] = 1
-    #                 det_flag[0, det_id] = 1
-    #         elif (np.sum(local_tau_table[qualified_sigma_candidates, det_id]) >= tp):
-    #             det_flag[0, det_id] = 1
-    #             gt_flag[0, qualified_sigma_candidates] = 1
-    #
-    #             global_accumulative_recall = global_accumulative_recall + num_qualified_sigma_candidates * fsc_k
-    #             global_accumulative_precision = global_accumulative_precision + fsc_k
-    #
-    #             local_accumulative_recall = local_accumulative_recall + num_qualified_sigma_candidates * fsc_k
-    #             local_accumulative_precision = local_accumulative_precision + fsc_k
+
+    print('local', local_accumulative_recall, local_accumulative_precision)
+    print('global', global_accumulative_recall, global_accumulative_precision)
 
     fid = open(fid_path, 'a+')
     try:
@@ -290,7 +258,7 @@ for idx in range(len(global_sigma)):
     except ZeroDivisionError:
         local_recall = 0
 
-    temp = ('%s______/Precision:_%s_______/Recall:_%s\n' % (allInputs[idx], str(local_precision), str(local_recall)))
+    temp = ('%s: /Precision = %s / Recall = %s\n' % (allInputs[idx], str(local_precision), str(local_recall)))
     fid.write(temp)
     fid.close()
 try:
@@ -309,56 +277,8 @@ except ZeroDivisionError:
     f_score = 0
 
 fid = open(fid_path, 'a')
-temp = ('Precision:_%s_______/Recall:_%s\n' %(str(precision), str(recall)))
+temp = ('Precision = %s / Recall = %s\n' %(str(precision), str(recall)))
 fid.write(temp)
 fid.close()
 
-print('pb')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+print('Done.')

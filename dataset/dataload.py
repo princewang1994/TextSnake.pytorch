@@ -112,7 +112,7 @@ class TextDataset(data.Dataset):
         mask[rr, cc] = value
 
     def make_text_center_line(self, sideline1, sideline2, center_line, radius, \
-                              tcl_mask, radius_map, sin_map, cos_map, expand=0.2, shrink=2):
+                              tcl_mask, radius_map, sin_map, cos_map, expand=0.2, shrink=1):
 
         # TODO: shrink 1/2 * radius at two line end
         for i in range(shrink, len(center_line) - 1 - shrink):
@@ -159,6 +159,7 @@ class TextDataset(data.Dataset):
                 sideline1, sideline2, center_points, radius = polygon.disk_cover(n_disk=cfg.n_disk)
                 self.make_text_center_line(sideline1, sideline2, center_points, radius, tcl_mask, radius_map, sin_map, cos_map)
         tr_mask, train_mask = self.make_text_region(image, polygons)
+
         # to pytorch channel sequence
         image = image.transpose(2, 0, 1)
 

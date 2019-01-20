@@ -79,11 +79,17 @@ def inference(model, detector, test_loader):
             # visualization
             img_show = img[idx].permute(1, 2, 0).cpu().numpy()
             img_show = ((img_show * cfg.stds + cfg.means) * 255).astype(np.uint8)
-            contours = result2polygon(img_show, batch_result[idx])
+            contours = result2polygon(img_show, batch_result)
+
+            predict_vis = visualize_detection(img_show, tr_pred[1], tcl_pred[1], contours)
+            gt_vis = visualize_detection(img_show, tr_mask[idx].cpu().numpy(), tcl_mask[idx].cpu().numpy(), contours)
+            im_vis = np.concatenate([predict_vis, gt_vis], axis=0)
+            path = os.path.join(cfg.vis_dir, '{}_{}'.format(i, meta['image_id'][idx]))
+            cv2.imwrite(path, im_vis)
+
             H, W = meta['Height'][idx].item(), meta['Width'][idx].item()
             img_show, contours = rescale_result(img_show, contours, H, W)
             write_to_file(contours, os.path.join(cfg.output_dir, meta['image_id'][idx].replace('jpg', 'txt')))
-            visualize_detection(img_show, tr_pred[1], tcl_pred[1], contours, '{}_{}'.format(i, meta['image_id'][idx]))
 
 
 def main():

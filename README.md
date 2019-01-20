@@ -3,13 +3,12 @@
 A PyTorch implement of **TextSnake: A Flexible Representation for Detecting Text of Arbitrary Shapes** (ECCV 2018) by `Face++`
 
 - Paper link: [arXiv:1807.01544](https://arxiv.org/abs/1807.01544)
-
 - Github: [princewang1994/TextSnake.pytorch](https://github.com/princewang1994/TextSnake.pytorch)
+- Blog: [TextSnake: A Flexible Representation for Detecting Text of Arbitrary Shapes](http://blog.prince2015.club/2019/01/06/TextSnake/)
 
 <div style="color:#0000FF" align="center">
-<img src="http://princepicbed.oss-cn-beijing.aliyuncs.com/blog_20181228201251.png" width="630"/> 
+<img src="http://princepicbed.oss-cn-beijing.aliyuncs.com/blog_20190120144708.png" width="630"/> 
 </div>
-
 
 ## Paper
 

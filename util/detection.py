@@ -5,8 +5,9 @@ from util.misc import norm2
 
 class TextDetector(object):
 
-    def __init__(self, conf_thresh=0.5):
-        self.conf_thresh = conf_thresh
+    def __init__(self, tr_thresh=0.4, tcl_thresh=0.6):
+        self.tr_thresh = tr_thresh
+        self.tcl_thresh = tcl_thresh
 
     def find_innerpoint(self, cont):
         """
@@ -87,6 +88,7 @@ class TextDetector(object):
         :return:
         """
 
+        H, W = pred_sin.shape
         x_init, y_init = init_xy
 
         sin = pred_sin[int(y_init), int(x_init)]
@@ -110,25 +112,34 @@ class TextDetector(object):
             cos_c = pred_cos[int(y_c), int(x_c)]
             radii = pred_radii[int(y_c), int(x_c)]
 
-            # shift stride = +/- 0.5 * [sin|cos](theta)
-            t = 0.5 * radii
-            x_shift_pos = x_c + cos_c * t * direct  # positive direction
-            y_shift_pos = y_c + sin_c * t * direct  # positive direction
-            x_shift_neg = x_c - cos_c * t * direct  # negative direction
-            y_shift_neg = y_c - sin_c * t * direct  # negative direction
+            # shift stride
+            for shrink in np.arange(0.5, 0.0, -0.1):  # [0.5, 0.4, 0.3, 0.2, 0.1]
+                t = shrink * radii   # stride = +/- 0.5 * [sin|cos](theta), if new point is outside, shrink it until shrink < 0.1, hit ends
+                x_shift_pos = x_c + cos_c * t * direct  # positive direction
+                y_shift_pos = y_c + sin_c * t * direct  # positive direction
+                x_shift_neg = x_c - cos_c * t * direct  # negative direction
+                y_shift_neg = y_c - sin_c * t * direct  # negative direction
 
-            # if first point, select positive direction shift
-            if len(result) == 1:
-                x_shift, y_shift = x_shift_pos, y_shift_pos
-            else:
-                # else select point further by second last point
-                dist_pos = norm2(result[-2][:2] - (x_shift_pos, y_shift_pos))
-                dist_neg = norm2(result[-2][:2] - (x_shift_neg, y_shift_neg))
-                if dist_pos > dist_neg:
+                # if first point, select positive direction shift
+                if len(result) == 1:
                     x_shift, y_shift = x_shift_pos, y_shift_pos
                 else:
-                    x_shift, y_shift = x_shift_neg, y_shift_neg
-
+                    # else select point further with second last point
+                    dist_pos = norm2(result[-2][:2] - (x_shift_pos, y_shift_pos))
+                    dist_neg = norm2(result[-2][:2] - (x_shift_neg, y_shift_neg))
+                    if dist_pos > dist_neg:
+                        x_shift, y_shift = x_shift_pos, y_shift_pos
+                    else:
+                        x_shift, y_shift = x_shift_neg, y_shift_neg
+                # if out of bounds, skip
+                if int(x_shift) >= W or int(x_shift) < 0 or int(y_shift) >= H or int(y_shift) < 0:
+                    continue
+                # found an inside point
+                if tcl_mask[int(y_shift), int(x_shift)]:
+                    break
+            # if out of bounds, break
+            if int(x_shift) >= W or int(x_shift) < 0 or int(y_shift) >= H or int(y_shift) < 0:
+                break
         return result
 
     def build_tcl(self, tcl_pred, sin_pred, cos_pred, radii_pred):
@@ -160,7 +171,7 @@ class TextDetector(object):
             x_init, y_init = init
 
             # find left tcl
-            tcl_left = self.mask_to_tcl(sin_pred, cos_pred, radii_pred, tcl_pred, (x_init, y_init))
+            tcl_left = self.mask_to_tcl(sin_pred, cos_pred, radii_pred, tcl_pred, (x_init, y_init), direct=1)
             tcl_left = np.array(tcl_left)
             # find right tcl
             tcl_right = self.mask_to_tcl(sin_pred, cos_pred, radii_pred, tcl_pred, (x_init, y_init), direct=-1)
@@ -173,18 +184,17 @@ class TextDetector(object):
 
     def detect(self, tr_pred, tcl_pred, sin_pred, cos_pred, radii_pred):
 
-        # multiply TR and TCL
-        tcl = tcl_pred * tr_pred
-
         # thresholding
-        tcl_pred_mask = tcl[1] > self.conf_thresh
+        tr_pred_mask = tr_pred[1] > self.tr_thresh
+        tcl_pred_mask = tcl_pred[1] > self.tcl_thresh
+
+        # multiply TR and TCL
+        tcl = tcl_pred_mask * tr_pred_mask
 
         # regularize
         sin_pred, cos_pred = regularize_sin_cos(sin_pred, cos_pred)
 
         # find tcl in each predicted mask
-        tcl_result = []
-        tcl = self.build_tcl(tcl_pred_mask, sin_pred, cos_pred, radii_pred)
-        tcl_result.append(tcl)
+        detect_result = self.build_tcl(tcl, sin_pred, cos_pred, radii_pred)
 
-        return tcl_result
+        return detect_result
