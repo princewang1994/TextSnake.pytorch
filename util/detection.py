@@ -54,6 +54,8 @@ class TextDetector(object):
         :return:
         """
 
+        H, W = mask.shape
+
         # calculate normal sin and cos
         normal_cos = -tangent_sin
         normal_sin = tangent_cos
@@ -63,6 +65,8 @@ class TextDetector(object):
         while mask[int(_y), int(_x)]:
             _x = _x + normal_cos * stride
             _y = _y + normal_sin * stride
+            if int(_x) >= W or int(_x) < 0 or int(_y) >= H or int(_y) < 0:
+                break
         end1 = np.array([_x, _y])
 
         # find downward
@@ -70,6 +74,8 @@ class TextDetector(object):
         while mask[int(_y), int(_x)]:
             _x = _x - normal_cos * stride
             _y = _y - normal_sin * stride
+            if int(_x) >= W or int(_x) < 0 or int(_y) >= H or int(_y) < 0:
+                break
         end2 = np.array([_x, _y])
 
         # centralizing

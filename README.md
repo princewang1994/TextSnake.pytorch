@@ -49,7 +49,7 @@ To run this repo successfully, it is highly recommanded with:
 - **Linux (Ubuntu 16.04)**
 - **Python3.6**
 - **Anaconda3**
-- **NVIDIA GPU(with 8G or larger GPU memroy for training, 2G for inference)**
+- **NVIDIA GPU(with 8G or larger GPU memory for training, 2G for inference)**
 
 (I haven't test it on other Python version.)
 

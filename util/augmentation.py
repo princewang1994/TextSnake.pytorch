@@ -324,9 +324,9 @@ class Augmentation(object):
         self.std = std
         self.augmentation = Compose([
             Resize(size),
+            # RandomBrightness(),
+            # RandomContrast(),
             RandomMirror(),
-            RandomBrightness(),
-            RandomContrast(),
             Rotate(),
             Normalize(mean, std)
         ])
