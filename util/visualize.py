@@ -1,11 +1,10 @@
-import torch
 import numpy as np
 import cv2
 import os
 from util.config import config as cfg
 
-def visualize_network_output(output, tr_mask, tcl_mask, prefix):
 
+def visualize_network_output(output, tr_mask, tcl_mask, prefix):
     tr_pred = output[:, :2]
     tr_score, tr_predict = tr_pred.max(dim=1)
 
@@ -42,5 +41,3 @@ def visualize_detection(image, tr, tcl, contours):
     tcl = cv2.cvtColor(tcl * 255, cv2.COLOR_GRAY2BGR)
     image_show = np.concatenate([image_show, tr, tcl], axis=1)
     return image_show
-    # path = os.path.join(cfg.vis_dir, image_id)
-    # cv2.imwrite(path, image_show)

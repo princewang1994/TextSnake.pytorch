@@ -28,6 +28,7 @@ config.output_dir = 'output'
 
 config.input_size = 512
 
+
 def update_config(config, extra_config):
     for k, v in vars(extra_config).items():
         config[k] = v

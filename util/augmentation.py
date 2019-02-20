@@ -40,8 +40,8 @@ class RandomMirror(object):
 class AugmentColor(object):
     def __init__(self):
         self.U = np.array([[-0.56543481, 0.71983482, 0.40240142],
-                      [-0.5989477, -0.02304967, -0.80036049],
-                      [-0.56694071, -0.6935729, 0.44423429]], dtype=np.float32)
+                           [-0.5989477, -0.02304967, -0.80036049],
+                           [-0.56694071, -0.6935729, 0.44423429]], dtype=np.float32)
         self.EV = np.array([1.65513492, 0.48450358, 0.1565086], dtype=np.float32)
         self.sigma = 0.1
         self.color_vec = None
@@ -92,7 +92,8 @@ class Rotate(object):
     def __init__(self, up=30):
         self.up = up
 
-    def rotate(self, center, pt, theta):  # 二维图形学的旋转
+    @staticmethod
+    def rotate(center, pt, theta):  # 二维图形学的旋转
         xr, yr = center
         yr = -yr
         x, y = pt[:, 0], pt[:, 1]
@@ -122,27 +123,28 @@ class Rotate(object):
                 polygon.points = pts
         return img, polygons
 
+
 class SquarePadding(object):
 
     def __call__(self, image, pts=None):
 
-        H, W, _ = image.shape
+        height, width, _ = image.shape
 
-        if H == W:
+        if height == width:
             return image, pts
 
-        padding_size = max(H, W)
+        padding_size = max(height, width)
         expand_image = np.zeros((padding_size, padding_size, 3), dtype=image.dtype)
 
-        if H > W:
-            y0, x0 = 0, (H - W) // 2
+        if height > width:
+            y0, x0 = 0, (height - width) // 2
         else:
-            y0, x0 = (W - H) // 2, 0
+            y0, x0 = (width - height) // 2, 0
         if pts is not None:
             pts[:, 0] += x0
             pts[:, 1] += y0
 
-        expand_image[y0:y0+H, x0:x0+W] = image
+        expand_image[y0:y0 + height, x0:x0 + width] = image
         image = expand_image
 
         return image, pts
@@ -163,8 +165,8 @@ class Padding(object):
         top = np.random.uniform(0, height * ratio - height)
 
         expand_image = np.zeros(
-          (int(height * ratio), int(width * ratio), depth),
-          dtype=image.dtype)
+            (int(height * ratio), int(width * ratio), depth),
+            dtype=image.dtype)
         expand_image[:, :, :] = self.fill
         expand_image[int(top):int(top + height),
         int(left):int(left + width)] = image
@@ -220,9 +222,9 @@ class RandomResizedCrop(object):
         i, j, h, w = self.get_params(image, self.scale, self.ratio)
         cropped = image[i:i + h, j:j + w, :]
         pts = pts.copy()
-        mask = (pts[:, 1] >= i) * (pts[:, 0] >= j) * (pts[:, 1] < (i+h)) * (pts[:, 0] < (j+w))
+        mask = (pts[:, 1] >= i) * (pts[:, 0] >= j) * (pts[:, 1] < (i + h)) * (pts[:, 0] < (j + w))
         pts[~mask, 2] = -1
-        scales = np.array([self.size[0]/w, self.size[1]/h])
+        scales = np.array([self.size[0] / w, self.size[1] / h])
         pts[:, :2] -= np.array([j, i])
         pts[:, :2] = (pts[:, :2] * scales)
         img = cv2.resize(cropped, self.size)
@@ -266,7 +268,7 @@ class RandomResizedLimitCrop(object):
         while attempt < 10:
             i, j, h, w = self.get_params(image, self.scale, self.ratio)
             mask = (pts[:, 1] >= i) * (pts[:, 0] >= j) * (pts[:, 1] < (i + h)) * (pts[:, 0] < (j + w))
-            if np.sum(mask) >= (round(num_joints * scale_vis)):
+            if np.sum(mask) >= (num_joints * scale_vis).round():
                 break
             attempt += 1
         if attempt == 10:

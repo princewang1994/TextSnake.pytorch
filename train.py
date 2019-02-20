@@ -18,7 +18,6 @@ from util.visualize import visualize_network_output
 
 
 def save_model(model, epoch, lr):
-
     save_dir = os.path.join(cfg.save_dir, cfg.exp_name)
     if not os.path.exists(save_dir):
         mkdirs(save_dir)
@@ -34,8 +33,6 @@ def save_model(model, epoch, lr):
 
 
 def train(model, train_loader, criterion, scheduler, optimizer, epoch):
-
-    start = time.time()
     losses = AverageMeter()
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -68,8 +65,11 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch):
             visualize_network_output(output, tr_mask, tcl_mask, prefix='train_{}'.format(i))
 
         if i % cfg.display_freq == 0:
-            print('Epoch: [ {} ][ {:03d} / {:03d} ] - Loss: {:.4f} - tr_loss: {:.4f} - tcl_loss: {:.4f} - sin_loss: {:.4f} - cos_loss: {:.4f} - radii_loss: {:.4f}'.format(
-                epoch, i, len(train_loader), loss.item(), tr_loss.item(), tcl_loss.item(), sin_loss.item(), cos_loss.item(), radii_loss.item())
+            print(
+                'Epoch: [ {} ][ {:03d} / {:03d} ] - Loss: {:.4f} - tr_loss: {:.4f} - tcl_loss: {:.4f} - sin_loss: '
+                '{:.4f} - cos_loss: {:.4f} - radii_loss: {:.4f}'.format(
+                    epoch, i, len(train_loader), loss.item(), tr_loss.item(), tcl_loss.item(), sin_loss.item(),
+                    cos_loss.item(), radii_loss.item())
             )
     if epoch % cfg.save_freq == 0 and epoch > 0:
         save_model(model, epoch, scheduler.get_lr())
@@ -78,7 +78,6 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch):
 
 
 def validation(model, valid_loader, criterion):
-
     model.eval()
     losses = AverageMeter()
 
@@ -99,15 +98,14 @@ def validation(model, valid_loader, criterion):
 
         if i % cfg.display_freq == 0:
             print(
-                'Validation: - Loss: {:.4f} - tr_loss: {:.4f} - tcl_loss: {:.4f} - sin_loss: {:.4f} - cos_loss: {:.4f} - radii_loss: {:.4f}'.format(
-                    loss.item(), tr_loss.item(), tcl_loss.item(), sin_loss.item(),
-                    cos_loss.item(), radii_loss.item())
+                'Validation: - Loss: {:.4f} - tr_loss: {:.4f} - tcl_loss: {:.4f} - sin_loss: {:.4f} - cos_loss: '
+                '{:.4f} - radii_loss: {:.4f}'.format(loss.item(), tr_loss.item(), tcl_loss.item(), sin_loss.item(),
+                                                     cos_loss.item(), radii_loss.item())
             )
     print('Validation Loss: {}'.format(losses.avg))
 
 
 def main():
-
     trainset = TotalText(
         data_root='data/total-text',
         ignore_list='./dataset/total_text/ignore_list.txt',
@@ -144,6 +142,7 @@ def main():
         validation(model, val_loader, criterion)
 
     print('End.')
+
 
 if __name__ == "__main__":
     # parse arguments

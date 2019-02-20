@@ -4,10 +4,13 @@ import os
 import cv2
 from util.config import config as cfg
 
+
 def to_device(*tensors):
     return (t.to(cfg.device) for t in tensors)
 
+
 def mkdirs(newdir):
+    """TODO: Specify it is used to make dir or dirs."""
     try:
         if not os.path.exists(newdir):
             os.makedirs(newdir)
@@ -18,14 +21,14 @@ def mkdirs(newdir):
 
 
 def fill_hole(input_mask):
-    h, w = input_mask.shape
-    canvas = np.zeros((h + 2, w + 2), np.uint8)
-    canvas[1:h + 1, 1:w + 1] = input_mask.copy()
+    height, width = input_mask.shape
+    canvas = np.zeros((height + 2, width + 2), np.uint8)
+    canvas[1:height + 1, 1:width + 1] = input_mask.copy()
 
-    mask = np.zeros((h + 4, w + 4), np.uint8)
+    mask = np.zeros((height + 4, width + 4), np.uint8)
 
     cv2.floodFill(canvas, mask, (0, 0), 1)
-    canvas = canvas[1:h + 1, 1:w + 1].astype(np.bool)
+    canvas = canvas[1:height + 1, 1:width + 1].astype(np.bool)
 
     return (~canvas | input_mask.astype(np.uint8))
 
@@ -38,8 +41,13 @@ def regularize_sin_cos(sin, cos):
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
+
     def __init__(self):
         self.reset()
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
 
     def reset(self):
         self.val = 0
@@ -53,13 +61,16 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
+
 def norm2(x, axis=None):
     if axis:
         return np.sqrt(np.sum(x ** 2, axis=axis))
     return np.sqrt(np.sum(x ** 2))
 
+
 def cos(p1, p2):
     return (p1 * p2).sum() / (norm2(p1) * norm2(p2))
+
 
 def vector_sin(v):
     assert len(v) == 2
@@ -67,14 +78,13 @@ def vector_sin(v):
     l = np.sqrt(v[0] ** 2 + v[1] ** 2)
     return v[1] / l
 
+
 def vector_cos(v):
     assert len(v) == 2
-    # cos = x / (sqrt(x^2 + y^2))
-    l = np.sqrt(v[0] ** 2 + v[1] ** 2)
-    return v[0] / l
+    return v[0] / np.sqrt(v[0] ** 2 + v[1] ** 2)
+
 
 def find_bottom(pts):
-
     if len(pts) > 4:
         e = np.concatenate([pts, pts[:3]])
         candidate = []
@@ -121,13 +131,13 @@ def split_long_edges(points, bottoms):
 
     i = b1_end + 1
     long_edge_1 = []
-    while (i % n_pts != b2_end):
+    while i % n_pts != b2_end:
         long_edge_1.append((i - 1, i))
         i = (i + 1) % n_pts
 
     i = b2_end + 1
     long_edge_2 = []
-    while (i % n_pts != b1_end):
+    while i % n_pts != b1_end:
         long_edge_2.append((i - 1, i))
         i = (i + 1) % n_pts
     return long_edge_1, long_edge_2
@@ -140,7 +150,7 @@ def find_long_edges(points, bottoms):
     i = (b1_end + 1) % n_pts
     long_edge_1 = []
 
-    while (i % n_pts != b2_end):
+    while i % n_pts != b2_end:
         start = (i - 1) % n_pts
         end = i % n_pts
         long_edge_1.append((start, end))
@@ -148,7 +158,7 @@ def find_long_edges(points, bottoms):
 
     i = (b2_end + 1) % n_pts
     long_edge_2 = []
-    while (i % n_pts != b1_end):
+    while i % n_pts != b1_end:
         start = (i - 1) % n_pts
         end = i % n_pts
         long_edge_2.append((start, end))
@@ -157,19 +167,19 @@ def find_long_edges(points, bottoms):
 
 
 def split_edge_seqence(points, long_edge, n_parts):
-
     edge_length = [norm2(points[e1] - points[e2]) for e1, e2 in long_edge]
     point_cumsum = np.cumsum([0] + edge_length)
     total_length = sum(edge_length)
     length_per_part = total_length / n_parts
 
-    cur_node = 0  # first point
+    # first point
+    cur_node = 0
     splited_result = []
 
     for i in range(1, n_parts):
         cur_end = i * length_per_part
 
-        while(cur_end > point_cumsum[cur_node + 1]):
+        while cur_end > point_cumsum[cur_node + 1]:
             cur_node += 1
 
         e1, e2 = long_edge[cur_node]
@@ -187,8 +197,3 @@ def split_edge_seqence(points, long_edge, n_parts):
     p_last = points[long_edge[-1][1]]
     splited_result = [p_first] + splited_result + [p_last]
     return np.stack(splited_result)
-
-
-
-
-

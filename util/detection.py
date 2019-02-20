@@ -3,13 +3,15 @@ import cv2
 from util.misc import fill_hole, regularize_sin_cos
 from util.misc import norm2
 
+
 class TextDetector(object):
 
     def __init__(self, tr_thresh=0.4, tcl_thresh=0.6):
         self.tr_thresh = tr_thresh
         self.tcl_thresh = tcl_thresh
 
-    def find_innerpoint(self, cont):
+    @staticmethod
+    def find_innerpoint(cont):
         """
         generate an inner point of input polygon using mean of x coordinate by:
         1. calculate mean of x coordinate(xmean)
@@ -35,8 +37,8 @@ class TextDetector(object):
             if in_poly < 0 and found:
                 break
 
-        if len(found_y) > 0:
-            return (xmean, np.array(found_y).mean())
+        if found_y:
+            return xmean, np.array(found_y).mean()
 
         # if cannot find using above method, try each point's neighbor
         else:
@@ -54,7 +56,7 @@ class TextDetector(object):
         :return:
         """
 
-        H, W = mask.shape
+        height, width = mask.shape
 
         # calculate normal sin and cos
         normal_cos = -tangent_sin
@@ -65,7 +67,7 @@ class TextDetector(object):
         while mask[int(_y), int(_x)]:
             _x = _x + normal_cos * stride
             _y = _y + normal_sin * stride
-            if int(_x) >= W or int(_x) < 0 or int(_y) >= H or int(_y) < 0:
+            if int(_x) >= width or int(_x) < 0 or int(_y) >= height or int(_y) < 0:
                 break
         end1 = np.array([_x, _y])
 
@@ -74,13 +76,12 @@ class TextDetector(object):
         while mask[int(_y), int(_x)]:
             _x = _x - normal_cos * stride
             _y = _y - normal_sin * stride
-            if int(_x) >= W or int(_x) < 0 or int(_y) >= H or int(_y) < 0:
+            if int(_x) >= width or int(_x) < 0 or int(_y) >= height or int(_y) < 0:
                 break
         end2 = np.array([_x, _y])
 
         # centralizing
         center = (end1 + end2) / 2
-
         return center
 
     def mask_to_tcl(self, pred_sin, pred_cos, pred_radii, tcl_mask, init_xy, direct=1):
@@ -94,7 +95,7 @@ class TextDetector(object):
         :return:
         """
 
-        H, W = pred_sin.shape
+        height, width = pred_sin.shape
         x_init, y_init = init_xy
 
         sin = pred_sin[int(y_init), int(x_init)]
@@ -120,7 +121,8 @@ class TextDetector(object):
 
             # shift stride
             for shrink in np.arange(0.5, 0.0, -0.1):  # [0.5, 0.4, 0.3, 0.2, 0.1]
-                t = shrink * radii   # stride = +/- 0.5 * [sin|cos](theta), if new point is outside, shrink it until shrink < 0.1, hit ends
+                # stride = +/- 0.5 * [sin|cos](theta), if new point is outside, shrink it until shrink < 0.1, hit ends
+                t = shrink * radii
                 x_shift_pos = x_c + cos_c * t * direct  # positive direction
                 y_shift_pos = y_c + sin_c * t * direct  # positive direction
                 x_shift_neg = x_c - cos_c * t * direct  # negative direction
@@ -138,13 +140,13 @@ class TextDetector(object):
                     else:
                         x_shift, y_shift = x_shift_neg, y_shift_neg
                 # if out of bounds, skip
-                if int(x_shift) >= W or int(x_shift) < 0 or int(y_shift) >= H or int(y_shift) < 0:
+                if int(x_shift) >= width or int(x_shift) < 0 or int(y_shift) >= height or int(y_shift) < 0:
                     continue
                 # found an inside point
                 if tcl_mask[int(y_shift), int(x_shift)]:
                     break
             # if out of bounds, break
-            if int(x_shift) >= W or int(x_shift) < 0 or int(y_shift) >= H or int(y_shift) < 0:
+            if int(x_shift) >= width or int(x_shift) < 0 or int(y_shift) >= height or int(y_shift) < 0:
                 break
         return result
 

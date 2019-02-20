@@ -24,7 +24,7 @@ class BaseOptions(object):
         self.parser = argparse.ArgumentParser()
 
         # basic opts
-        self.parser.add_argument('exp_name', type=str, help='Experiment name')
+        self.parser.add_argument('exp_name', default='example', type=str, help='Experiment name')
         self.parser.add_argument('--net', default='depict', type=str, choices=['depict', 'depict+', 'depict_ten', 'resnet'], help='Network name')
         self.parser.add_argument('--dataset', default='MNIST_full', type=str, choices=['MNIST_full', 'CIFAR10', 'USPS', 'FASHION_MNIST', 'CMU-PIE', 'USPS2', 'FRGC', 'MNIST_test'], help='Dataset name')
         self.parser.add_argument('--resume', default=None, type=str, help='Path to target resume checkpoint')

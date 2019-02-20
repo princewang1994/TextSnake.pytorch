@@ -1,2 +1,4 @@
 .idea/
 __pycache__/
+dataset/total_text/groundtruth_text*
+dataset/total_text/totaltext*
