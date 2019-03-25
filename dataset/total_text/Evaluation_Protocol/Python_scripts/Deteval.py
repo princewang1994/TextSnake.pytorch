@@ -98,10 +98,9 @@ for i, input_id in enumerate(allInputs):
                     det_y = detection[1::2]
                     gt_x = list(map(int, np.squeeze(gt[1])))
                     gt_y = list(map(int, np.squeeze(gt[3])))
-
+                    # print('bbb', i, gt_id, det_id)
                     local_sigma_table[gt_id, det_id] = sigma_calculation(det_x, det_y, gt_x, gt_y)
                     local_tau_table[gt_id, det_id] = tau_calculation(det_x, det_y, gt_x, gt_y)
-
         global_sigma.append(local_sigma_table)
         global_tau.append(local_tau_table)
 
@@ -109,7 +108,6 @@ global_accumulative_recall = 0
 global_accumulative_precision = 0
 total_num_gt = 0
 total_num_det = 0
-
 
 def one_to_one(local_sigma_table, local_tau_table, local_accumulative_recall,
                local_accumulative_precision, global_accumulative_recall, global_accumulative_precision,
@@ -208,7 +206,7 @@ def many_to_many(local_sigma_table, local_tau_table, local_accumulative_recall,
     return local_accumulative_recall, local_accumulative_precision, global_accumulative_recall, global_accumulative_precision, gt_flag, det_flag
 
 for idx in range(len(global_sigma)):
-    print(allInputs[idx])
+
     local_sigma_table = global_sigma[idx]
     local_tau_table = global_tau[idx]
 
@@ -247,7 +245,7 @@ for idx in range(len(global_sigma)):
     print('local', local_accumulative_recall, local_accumulative_precision)
     print('global', global_accumulative_recall, global_accumulative_precision)
 
-    fid = open(fid_path, 'a+')
+    fid = open(fid_path, 'w')
     try:
         local_precision = local_accumulative_precision / num_det
     except ZeroDivisionError:
@@ -258,7 +256,7 @@ for idx in range(len(global_sigma)):
     except ZeroDivisionError:
         local_recall = 0
 
-    temp = ('%s: /Precision = %s / Recall = %s\n' % (allInputs[idx], str(local_precision), str(local_recall)))
+    temp = ('%s: Precision = %.4f - Recall = %.4f\n' % (allInputs[idx], local_precision, local_recall))
     fid.write(temp)
     fid.close()
 try:
@@ -277,7 +275,7 @@ except ZeroDivisionError:
     f_score = 0
 
 fid = open(fid_path, 'a')
-temp = ('Precision = %s / Recall = %s\n' %(str(precision), str(recall)))
+temp = ('Precision = %.4f - Recall = %.4f - Fscore = %.4f\n' % (precision, recall, f_score))
 fid.write(temp)
 fid.close()
 

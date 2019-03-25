@@ -4,7 +4,12 @@ import cv2
 import os
 from util.config import config as cfg
 
-def visualize_network_output(output, tr_mask, tcl_mask, prefix):
+
+def visualize_network_output(output, tr_mask, tcl_mask, mode='train'):
+
+    vis_dir = os.path.join(cfg.vis_dir, mode)
+    if not os.path.exists(vis_dir):
+        os.mkdir(vis_dir)
 
     tr_pred = output[:, :2]
     tr_score, tr_predict = tr_pred.max(dim=1)
@@ -29,7 +34,8 @@ def visualize_network_output(output, tr_mask, tcl_mask, prefix):
         tcl_show = np.concatenate([tcl_pred, tcl_targ], axis=1)
         show = np.concatenate([tr_show, tcl_show], axis=0)
         show = cv2.resize(show, (512, 512))
-        path = os.path.join(cfg.vis_dir, '{}_{}.png'.format(prefix, i))
+
+        path = os.path.join(vis_dir, '{}_{}'.format(cfg.exp_name, mode), '{}.png'.format(i))
         cv2.imwrite(path, show)
 
 

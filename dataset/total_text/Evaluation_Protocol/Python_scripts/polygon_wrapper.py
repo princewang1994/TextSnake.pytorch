@@ -1,5 +1,6 @@
 import numpy as np
 from skimage.draw import polygon
+from shapely.geometry import Polygon
 
 """
 :param det_x: [1, N] Xs of detection's vertices 
@@ -18,6 +19,7 @@ def area(x, y):
     """
     This helper calculates the area given x and y vertices.
     """
+    return shapely_area(x, y)
     ymax = np.max(y)
     xmax = np.max(x)
     bin_mask = np.zeros((ymax, xmax))
@@ -54,10 +56,20 @@ def approx_area_of_intersection(det_x, det_y, gt_x, gt_y):
 
     return intersect_heights * intersect_widths
 
+def shapely_area_of_intersection(det_x, det_y, gt_x, gt_y):
+    p1 = Polygon(np.stack([det_x, det_y], axis=1)).buffer(0)
+    p2 = Polygon(np.stack([gt_x, gt_y], axis=1)).buffer(0)
+    return int(p1.intersection(p2).area)
+
+def shapely_area(x, y):
+    polygon = Polygon(np.stack([x, y], axis=1))
+    return int(polygon.area)
+
 def area_of_intersection(det_x, det_y, gt_x, gt_y):
     """
     This helper calculates the area of intersection.
     """
+    return shapely_area_of_intersection(det_x, det_y, gt_x, gt_y)
     if approx_area_of_intersection(det_x, det_y, gt_x, gt_y) > 1: #only proceed if it passes the approximation test
         ymax = np.maximum(np.max(det_y), np.max(gt_y)) + 1
         xmax = np.maximum(np.max(det_x), np.max(gt_x)) + 1

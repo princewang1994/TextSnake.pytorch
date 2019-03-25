@@ -28,6 +28,12 @@ config.output_dir = 'output'
 
 config.input_size = 512
 
+# max polygon per image
+config.max_annotation = 200
+
+# max point per polygon
+config.max_points = 20
+
 def update_config(config, extra_config):
     for k, v in vars(extra_config).items():
         config[k] = v

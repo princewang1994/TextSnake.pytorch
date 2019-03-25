@@ -26,7 +26,7 @@ class BaseOptions(object):
         # basic opts
         self.parser.add_argument('exp_name', type=str, help='Experiment name')
         self.parser.add_argument('--net', default='depict', type=str, choices=['depict', 'depict+', 'depict_ten', 'resnet'], help='Network name')
-        self.parser.add_argument('--dataset', default='MNIST_full', type=str, choices=['MNIST_full', 'CIFAR10', 'USPS', 'FASHION_MNIST', 'CMU-PIE', 'USPS2', 'FRGC', 'MNIST_test'], help='Dataset name')
+        self.parser.add_argument('--dataset', default='total-text', type=str, choices=['total-text'], help='Dataset name')
         self.parser.add_argument('--resume', default=None, type=str, help='Path to target resume checkpoint')
         self.parser.add_argument('--num_workers', default=8, type=int, help='Number of workers used in dataloading')
         self.parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to train model')

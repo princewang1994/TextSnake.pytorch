@@ -32,20 +32,19 @@ class TotalText(TextDataset):
         :return: (list), TextInstance
         """
         annot = io.loadmat(mat_path)
-        polygon = []
+        polygons = []
         for cell in annot['polygt']:
             x = cell[1][0]
             y = cell[3][0]
-            text = cell[4][0]
-            if len(x) < 4: # too few points
+            text = cell[4][0] if len(cell[4]) > 0 else '#'
+            ori = cell[5][0] if len(cell[5]) > 0 else 'c'
+
+            if len(x) < 4:  # too few points
                 continue
-            try:
-                ori = cell[5][0]
-            except:
-                ori = 'c'
             pts = np.stack([x, y]).T.astype(np.int32)
-            polygon.append(TextInstance(pts, ori, text))
-        return polygon
+            polygons.append(TextInstance(pts, ori, text))
+
+        return polygons
 
     def __getitem__(self, item):
 
@@ -82,11 +81,13 @@ if __name__ == '__main__':
 
     trainset = TotalText(
         data_root='data/total-text',
-        ignore_list='./ignore_list.txt',
+        # ignore_list='./ignore_list.txt',
         is_training=True,
         transform=transform
     )
 
-    for idx in range(len(trainset)):
+    # img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map, meta = trainset[944]
+
+    for idx in range(950, len(trainset)):
         img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map, meta = trainset[idx]
         print(idx, img.shape)

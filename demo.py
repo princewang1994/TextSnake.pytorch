@@ -18,17 +18,18 @@ import cv2
 
 def result2polygon(image, result):
     """ convert geometric info(center_x, center_y, radii) into contours
+    :param image: (np.array), input image
     :param result: (list), each with (n, 3), 3 denotes (x, y, radii)
     :return: (np.ndarray list), polygon format contours
     """
-    mask = np.zeros(image.shape[:2], dtype=np.uint8)
+    all_conts = []
     for disk in result:
+        mask = np.zeros(image.shape[:2], dtype=np.uint8)
         for x, y, r in disk:
             cv2.circle(mask, (int(x), int(y)), int(r), (1), -1)
-
-    _, conts, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    conts = [cont[:, 0, :] for cont in conts]
-    return conts
+        _, conts, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        all_conts += [cont[:, 0, :] for cont in conts]
+    return all_conts
 
 
 def rescale_result(image, contours, H, W):
@@ -81,16 +82,19 @@ def inference(model, detector, test_loader):
             img_show = ((img_show * cfg.stds + cfg.means) * 255).astype(np.uint8)
             contours = result2polygon(img_show, batch_result)
 
-            predict_vis = visualize_detection(img_show, tr_pred[1], tcl_pred[1], contours)
-            gt_vis = visualize_detection(img_show, tr_mask[idx].cpu().numpy(), tcl_mask[idx].cpu().numpy(), contours)
-            im_vis = np.concatenate([predict_vis, gt_vis], axis=0)
-            path = os.path.join(cfg.vis_dir, '{}_{}'.format(i, meta['image_id'][idx]))
+            pred_vis = visualize_detection(img_show, tr_pred[1], tcl_pred[1], contours)
+            gt_contour = []
+            for annot, n_annot in zip(meta['annotation'][idx], meta['n_annotation'][idx]):
+                if n_annot.item() > 0:
+                    gt_contour.append(annot[:n_annot].int().cpu().numpy())
+            gt_vis = visualize_detection(img_show, tr_mask[idx].cpu().numpy(), tcl_mask[idx].cpu().numpy(), gt_contour)
+            im_vis = np.concatenate([pred_vis, gt_vis], axis=0)
+            path = os.path.join(cfg.vis_dir, '{}_test'.format(cfg.exp_name), meta['image_id'][idx])
             cv2.imwrite(path, im_vis)
 
             H, W = meta['Height'][idx].item(), meta['Width'][idx].item()
             img_show, contours = rescale_result(img_show, contours, H, W)
             write_to_file(contours, os.path.join(cfg.output_dir, meta['image_id'][idx].replace('jpg', 'txt')))
-
 
 def main():
 
@@ -129,5 +133,8 @@ if __name__ == "__main__":
     update_config(cfg, args)
     print_config(cfg)
 
+    vis_dir = os.path.join(cfg.vis_dir, '{}_test'.format(cfg.exp_name))
+    if not os.path.exists(vis_dir):
+        os.mkdir(vis_dir)
     # main
     main()

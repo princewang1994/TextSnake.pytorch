@@ -42,6 +42,8 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch):
     end = time.time()
     model.train()
 
+    print('Epoch: [ {} ]:')
+
     for i, (img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map, meta) in enumerate(train_loader):
         data_time.update(time.time() - end)
 
@@ -65,11 +67,11 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch):
         end = time.time()
 
         if cfg.viz and i < cfg.vis_num:
-            visualize_network_output(output, tr_mask, tcl_mask, prefix='train_{}'.format(i))
+            visualize_network_output(output, tr_mask, tcl_mask, mode='train')
 
         if i % cfg.display_freq == 0:
-            print('Epoch: [ {} ][ {:03d} / {:03d} ] - Loss: {:.4f} - tr_loss: {:.4f} - tcl_loss: {:.4f} - sin_loss: {:.4f} - cos_loss: {:.4f} - radii_loss: {:.4f}'.format(
-                epoch, i, len(train_loader), loss.item(), tr_loss.item(), tcl_loss.item(), sin_loss.item(), cos_loss.item(), radii_loss.item())
+            print('({:03d} / {:03d}) - Loss: {:.4f} - tr_loss: {:.4f} - tcl_loss: {:.4f} - sin_loss: {:.4f} - cos_loss: {:.4f} - radii_loss: {:.4f}'.format(
+                i, len(train_loader), loss.item(), tr_loss.item(), tcl_loss.item(), sin_loss.item(), cos_loss.item(), radii_loss.item())
             )
     if epoch % cfg.save_freq == 0 and epoch > 0:
         save_model(model, epoch, scheduler.get_lr())
@@ -95,7 +97,7 @@ def validation(model, valid_loader, criterion):
         losses.update(loss.item())
 
         if cfg.viz and i < cfg.vis_num:
-            visualize_network_output(output, tr_mask, tcl_mask, prefix='val_{}'.format(i))
+            visualize_network_output(output, tr_mask, tcl_mask, mode='val')
 
         if i % cfg.display_freq == 0:
             print(
@@ -108,25 +110,30 @@ def validation(model, valid_loader, criterion):
 
 def main():
 
-    trainset = TotalText(
-        data_root='data/total-text',
-        ignore_list='./dataset/total_text/ignore_list.txt',
-        is_training=True,
-        transform=Augmentation(size=cfg.input_size, mean=cfg.means, std=cfg.stds)
-    )
+    if cfg.dataset == 'total-text':
 
-    valset = TotalText(
-        data_root='data/total-text',
-        ignore_list=None,
-        is_training=False,
-        transform=BaseTransform(size=cfg.input_size, mean=cfg.means, std=cfg.stds)
-    )
+        trainset = TotalText(
+            data_root='data/total-text',
+            ignore_list='./dataset/total_text/ignore_list.txt',
+            is_training=True,
+            transform=Augmentation(size=cfg.input_size, mean=cfg.means, std=cfg.stds)
+        )
+
+        valset = TotalText(
+            data_root='data/total-text',
+            ignore_list=None,
+            is_training=False,
+            transform=BaseTransform(size=cfg.input_size, mean=cfg.means, std=cfg.stds)
+        )
+    else:
+        pass
 
     train_loader = data.DataLoader(trainset, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.num_workers)
     val_loader = data.DataLoader(valset, batch_size=cfg.batch_size, shuffle=False, num_workers=cfg.num_workers)
 
     # Model
-    model = TextNet()
+    if cfg.mgpu:
+        model = TextNet()
     # model = nn.DataParallel(model, device_ids=cfg.gpu_ids)
 
     model = model.to(cfg.device)

@@ -164,9 +164,6 @@ class TextDetector(object):
         _, conts, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         for cont in conts:
-            # remove small regions
-            if cv2.contourArea(cont) < 20:
-                continue
 
             # find an inner point of polygon
             init = self.find_innerpoint(cont)

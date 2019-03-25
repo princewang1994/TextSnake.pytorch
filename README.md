@@ -91,7 +91,7 @@ Runing following command can generate demo on TotalText dataset (300 pictures), 
 
 ```shell
 $ EXPNAME=example
-$ CUDA_VISIBLE_DEVICES=$GPUID python demo.py --checkepoch 190
+$ CUDA_VISIBLE_DEVICES=$GPUID python demo.py $EXPNAME --checkepoch 190
 ```
 
 **options:**
@@ -118,7 +118,7 @@ other options can be show by run `python train.py -h`
 
 - [ ] Pretrained model upload (soon)
 - [ ] More dataset suport: [ICDAR15/[SynthText](https://github.com/ankush-me/SynthText)]
-- [ ] Metric computing
+- [x] Metric computing
 - [ ] Cython/C++ accelerate core functions
 
 ## License

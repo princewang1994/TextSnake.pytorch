@@ -23,17 +23,18 @@ class TextInstance(object):
         self.orient = orient
         self.text = text
 
-        self.points = []
+        remove_points = []
 
-        # remove point if area is almost unchanged after removing
+        # remove point if area is almost unchanged after removing it
         ori_area = cv2.contourArea(points)
         for p in range(len(points)):
+            # attempt to remove p
             index = list(range(len(points)))
             index.remove(p)
             area = cv2.contourArea(points[index])
-            if np.abs(ori_area - area) / ori_area > 0.017:
-                self.points.append(points[p])
-        self.points = np.array(self.points)
+            if np.abs(ori_area - area) / ori_area < 0.017 and len(points) - len(remove_points) > 4:
+                remove_points.append(p)
+        self.points = np.array([point for i, point in enumerate(points) if i not in remove_points])
 
     def find_bottom_and_sideline(self):
         self.bottoms = find_bottom(self.points)  # find two bottoms of this Text
@@ -163,9 +164,19 @@ class TextDataset(data.Dataset):
         # to pytorch channel sequence
         image = image.transpose(2, 0, 1)
 
+        points = np.zeros((cfg.max_annotation, cfg.max_points, 2))
+        length = np.zeros(cfg.max_annotation, dtype=int)
+
+        for i, polygon in enumerate(polygons):
+            pts = polygon.points
+            points[i, :pts.shape[0]] = polygon.points
+            length[i] = pts.shape[0]
+
         meta = {
             'image_id': image_id,
             'image_path': image_path,
+            'annotation': points,
+            'n_annotation': length,
             'Height': H,
             'Width': W
         }
