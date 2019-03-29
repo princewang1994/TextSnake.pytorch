@@ -25,17 +25,16 @@ class BaseOptions(object):
 
         # basic opts
         self.parser.add_argument('exp_name', type=str, help='Experiment name')
-        self.parser.add_argument('--net', default='depict', type=str, choices=['depict', 'depict+', 'depict_ten', 'resnet'], help='Network name')
+        self.parser.add_argument('--net', default='vgg', type=str, choices=['vgg', 'resnet'], help='Network architecture')
         self.parser.add_argument('--dataset', default='total-text', type=str, choices=['total-text'], help='Dataset name')
         self.parser.add_argument('--resume', default=None, type=str, help='Path to target resume checkpoint')
         self.parser.add_argument('--num_workers', default=8, type=int, help='Number of workers used in dataloading')
         self.parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to train model')
+        self.parser.add_argument('--mgpu', action='store_true', help='Use multi-gpu to train model')
         self.parser.add_argument('--save_dir', default='./save/', help='Path to save checkpoint models')
         self.parser.add_argument('--vis_dir', default='./vis/', help='Path to save visualization images')
-        self.parser.add_argument('--train_csv', default='../data/train.csv', type=str, help='Path of training label files')
-        self.parser.add_argument('--val_csv', default='../data/val.csv', type=str, help='Path of validation label files')
+        self.parser.add_argument('--log_dir', default='./logs/', help='Path to tensorboard log')
         self.parser.add_argument('--loss', default='CrossEntropyLoss', type=str, help='Training Loss')
-        self.parser.add_argument('--soft_ce', default=True, type=str2bool, help='Use SoftCrossEntropyLoss')
         self.parser.add_argument('--input_channel', default=1, type=int, help='number of input channels' )
         self.parser.add_argument('--pretrain', default=False, type=str2bool, help='Pretrained AutoEncoder model')
         self.parser.add_argument('--verbose', '-v', default=True, type=str2bool, help='Whether to output debug info')
@@ -44,7 +43,6 @@ class BaseOptions(object):
         # train opts
         self.parser.add_argument('--start_iter', default=0, type=int, help='Begin counting iterations starting from this value (should be used with resume)')
         self.parser.add_argument('--max_epoch', default=200, type=int, help='Max epochs')
-        self.parser.add_argument('--max_iters', default=50000, type=int, help='Number of training iterations')
         self.parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float, help='initial learning rate')
         self.parser.add_argument('--lr_adjust', default='fix', choices=['fix', 'poly'], type=str, help='Learning Rate Adjust Strategy')
         self.parser.add_argument('--stepvalues', default=[], nargs='+', type=int, help='# of iter to change lr')
@@ -53,8 +51,9 @@ class BaseOptions(object):
         self.parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
         self.parser.add_argument('--batch_size', default=4, type=int, help='Batch size for training')
         self.parser.add_argument('--optim', default='SGD', type=str, choices=['SGD', 'Adam'], help='Optimizer')
-        self.parser.add_argument('--save_freq', default=5, type=int, help='save weights every # epoch')
         self.parser.add_argument('--display_freq', default=50, type=int, help='display training metrics every # iterations')
+        self.parser.add_argument('--save_freq', default=5, type=int, help='save weights every # epoch')
+        self.parser.add_argument('--log_freq', default=50, type=int, help='log to tensorboard every # iterations')
         self.parser.add_argument('--val_freq', default=100, type=int, help='do validation every # iterations')
 
         # data args

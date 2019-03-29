@@ -98,7 +98,7 @@ for i, input_id in enumerate(allInputs):
                     det_y = detection[1::2]
                     gt_x = list(map(int, np.squeeze(gt[1])))
                     gt_y = list(map(int, np.squeeze(gt[3])))
-                    # print('bbb', i, gt_id, det_id)
+
                     local_sigma_table[gt_id, det_id] = sigma_calculation(det_x, det_y, gt_x, gt_y)
                     local_tau_table[gt_id, det_id] = tau_calculation(det_x, det_y, gt_x, gt_y)
         global_sigma.append(local_sigma_table)

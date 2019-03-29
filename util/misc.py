@@ -4,8 +4,10 @@ import os
 import cv2
 from util.config import config as cfg
 
+
 def to_device(*tensors):
     return (t.to(cfg.device) for t in tensors)
+
 
 def mkdirs(newdir):
     try:
