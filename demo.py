@@ -14,6 +14,7 @@ from util.config import config as cfg, update_config, print_config
 from util.misc import to_device
 from util.option import BaseOptions
 from util.visualize import visualize_detection
+from util.misc import mkdirs
 import cv2
 
 def result2polygon(image, result):
@@ -42,8 +43,14 @@ def rescale_result(image, contours, H, W):
 
 
 def write_to_file(contours, file_path):
+    """
+    :param contours: [[x1, y1], [x2, y2]... [xn, yn]]
+    :param file_path: target file path
+    """
+    # according to total-text evaluation method, output file shoud be formatted to: y0,x0, ..... yn,xn
     with open(file_path, 'w') as f:
         for cont in contours:
+            cont = np.stack([cont[:, 1], cont[:, 0]], 1)
             cont = cont.flatten().astype(str).tolist()
             cont = ','.join(cont)
             f.write(cont + '\n')
@@ -75,6 +82,7 @@ def inference(model, detector, test_loader):
             cos_pred = output[idx, 5].data.cpu().numpy()
             radii_pred = output[idx, 6].data.cpu().numpy()
 
+            # get model output
             batch_result = detector.detect(tr_pred, tcl_pred, sin_pred, cos_pred, radii_pred)  # (n_tcl, 3)
 
             # visualization
@@ -94,7 +102,11 @@ def inference(model, detector, test_loader):
 
             H, W = meta['Height'][idx].item(), meta['Width'][idx].item()
             img_show, contours = rescale_result(img_show, contours, H, W)
-            write_to_file(contours, os.path.join(cfg.output_dir, meta['image_id'][idx].replace('jpg', 'txt')))
+
+            # write to file
+            output_dir = os.path.join(cfg.output_dir, cfg.exp_name)
+            mkdirs(output_dir)
+            write_to_file(contours, os.path.join(output_dir, meta['image_id'][idx].replace('jpg', 'txt')))
 
 def main():
 

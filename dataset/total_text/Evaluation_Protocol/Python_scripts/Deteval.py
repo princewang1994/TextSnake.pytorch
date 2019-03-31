@@ -11,7 +11,7 @@ from polygon_wrapper import area
 Input format: y0,x0, ..... yn,xn. Each detection is separated by the end of line token ('\n')'
 """
 
-input_dir = 'output'
+input_dir = 'output/test'
 gt_dir = 'data/total-text/gt/Test'
 fid_path = 'Python_Pascal_result_last_check.txt'
 
@@ -36,7 +36,7 @@ def gt_reading_mod(gt_dir, gt_id):
 
 def detection_filtering(detections, groundtruths, threshold=0.5):
     for gt_id, gt in enumerate(groundtruths):
-        if (gt[5].size == 0 or gt[5] == '#') and (gt[1].shape[1] > 1):
+        if (gt[5] == '#') and (gt[1].shape[1] > 1):
             gt_x = list(map(int, np.squeeze(gt[1])))
             gt_y = list(map(int, np.squeeze(gt[3])))
             for det_id, detection in enumerate(detections):
@@ -72,7 +72,7 @@ global_fp = 0
 global_fn = 0
 global_sigma = []
 global_tau = []
-tr = 0.6
+tr = 0.7
 tp = 0.6
 fsc_k = 0.8
 k = 2
@@ -94,8 +94,8 @@ for i, input_id in enumerate(allInputs):
                 for det_id, detection in enumerate(detections):
                     detection = detection.split(',')
                     detection = list(map(int, detection[:-2]))
-                    det_x = detection[0::2]
-                    det_y = detection[1::2]
+                    det_y = detection[0::2]
+                    det_x = detection[1::2]
                     gt_x = list(map(int, np.squeeze(gt[1])))
                     gt_y = list(map(int, np.squeeze(gt[3])))
 
@@ -205,6 +205,8 @@ def many_to_many(local_sigma_table, local_tau_table, local_accumulative_recall,
                 local_accumulative_precision = local_accumulative_precision + fsc_k
     return local_accumulative_recall, local_accumulative_precision, global_accumulative_recall, global_accumulative_precision, gt_flag, det_flag
 
+fid = open(fid_path, 'w')
+
 for idx in range(len(global_sigma)):
 
     local_sigma_table = global_sigma[idx]
@@ -242,10 +244,6 @@ for idx in range(len(global_sigma)):
                                     global_accumulative_recall, global_accumulative_precision,
                                     gt_flag, det_flag)
 
-    print('local', local_accumulative_recall, local_accumulative_precision)
-    print('global', global_accumulative_recall, global_accumulative_precision)
-
-    fid = open(fid_path, 'w')
     try:
         local_precision = local_accumulative_precision / num_det
     except ZeroDivisionError:
@@ -256,9 +254,10 @@ for idx in range(len(global_sigma)):
     except ZeroDivisionError:
         local_recall = 0
 
-    temp = ('%s: Precision = %.4f - Recall = %.4f\n' % (allInputs[idx], local_precision, local_recall))
-    fid.write(temp)
-    fid.close()
+    str_write = ('%s: Precision = %.4f - Recall = %.4f\n' % (allInputs[idx], local_precision, local_recall))
+    fid.write(str_write)
+fid.close()
+
 try:
     recall = global_accumulative_recall / total_num_gt
 except ZeroDivisionError:
@@ -275,8 +274,10 @@ except ZeroDivisionError:
     f_score = 0
 
 fid = open(fid_path, 'a')
-temp = ('Precision = %.4f - Recall = %.4f - Fscore = %.4f\n' % (precision, recall, f_score))
-fid.write(temp)
+str_write = ('Precision = %.4f - Recall = %.4f - Fscore = %.4f\n' % (precision, recall, f_score))
+fid.write(str_write)
 fid.close()
 
+print('Config: tr: {} - tp'.format(tr, tp))
+print(str_write)
 print('Done.')

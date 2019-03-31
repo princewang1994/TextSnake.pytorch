@@ -153,9 +153,9 @@ class Padding(object):
     def __init__(self, fill=0):
         self.fill = fill
 
-    def __call__(self, image, pts):
+    def __call__(self, image, polygons=None):
         if np.random.randint(2):
-            return image, pts
+            return image, polygons
 
         height, width, depth = image.shape
         ratio = np.random.uniform(1, 2)
@@ -170,9 +170,11 @@ class Padding(object):
         int(left):int(left + width)] = image
         image = expand_image
 
-        pts[:, 0] += left
-        pts[:, 1] += top
-        return image, pts
+        if polygons is not None:
+            for polygon in polygons:
+                polygon.points[:, 0] = polygon.points[:, 0] + left
+                polygon.points[:, 1] = polygon.points[:, 1] + top
+        return image, polygons
 
 
 class RandomResizedCrop(object):
@@ -244,7 +246,6 @@ class RandomResizedLimitCrop(object):
 
             w = int(round(math.sqrt(target_area * aspect_ratio)))
             h = int(round(math.sqrt(target_area / aspect_ratio)))
-
             if np.random.random() < 0.5:
                 w, h = h, w
 
@@ -259,31 +260,18 @@ class RandomResizedLimitCrop(object):
         j = (img.shape[1] - w) // 2
         return i, j, w, w
 
-    def __call__(self, image, pts):
-        num_joints = np.sum(pts[:, -1] != -1)
-        attempt = 0
-        scale_vis = 0.75
-        while attempt < 10:
-            i, j, h, w = self.get_params(image, self.scale, self.ratio)
-            mask = (pts[:, 1] >= i) * (pts[:, 0] >= j) * (pts[:, 1] < (i + h)) * (pts[:, 0] < (j + w))
-            if np.sum(mask) >= (round(num_joints * scale_vis)):
-                break
-            attempt += 1
-        if attempt == 10:
-            w = min(image.shape[0], image.shape[1])
-            h = w
-            i = (image.shape[0] - w) // 2
-            j = (image.shape[1] - w) // 2
+    def __call__(self, image, polygons=None):
+        i, j, h, w = self.get_params(image, self.scale, self.ratio)
 
         cropped = image[i:i + h, j:j + w, :]
-        pts = pts.copy()
-        mask = (pts[:, 1] >= i) * (pts[:, 0] >= j) * (pts[:, 1] < (i + h)) * (pts[:, 0] < (j + w))
-        pts[~mask, 2] = -1
         scales = np.array([self.size[0] / w, self.size[1] / h])
-        pts[:, :2] -= np.array([j, i])
-        pts[:, :2] = (pts[:, :2] * scales).astype(np.int)
+        if polygons is not None:
+            for polygon in polygons:
+                polygon.points[:, 0] = (polygon.points[:, 0] - j) * scales[0]
+                polygon.points[:, 1] = (polygon.points[:, 1] - i) * scales[1]
+
         img = cv2.resize(cropped, self.size)
-        return img, pts
+        return img, polygons
 
 
 class Normalize(object):
@@ -323,7 +311,9 @@ class Augmentation(object):
         self.mean = mean
         self.std = std
         self.augmentation = Compose([
-            Resize(size),
+            # Resize(size),
+            Padding(),
+            RandomResizedLimitCrop(size=size, scale=(0.24, 1.0), ratio=(0.33, 3)),
             # RandomBrightness(),
             # RandomContrast(),
             RandomMirror(),

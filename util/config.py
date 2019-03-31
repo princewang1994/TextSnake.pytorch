@@ -34,6 +34,9 @@ config.max_annotation = 200
 # max point per polygon
 config.max_points = 20
 
+# use hard examples (annotated as '#')
+config.use_hard = True
+
 def update_config(config, extra_config):
     for k, v in vars(extra_config).items():
         config[k] = v

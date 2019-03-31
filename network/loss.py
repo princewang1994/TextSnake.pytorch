@@ -14,8 +14,8 @@ class TextLoss(nn.Module):
         n_pos = pos.float().sum()
         n_neg = min(int(neg.float().sum().item()), int(negative_ratio * n_pos.float()))
 
-        loss_pos = F.cross_entropy(predict[pos], target[pos], size_average=False)
-        loss_neg = F.cross_entropy(predict[neg], target[neg], reduce=False)
+        loss_pos = F.cross_entropy(predict[pos], target[pos], reduction='sum')
+        loss_neg = F.cross_entropy(predict[neg], target[neg], reduction='none')
         loss_neg, _ = torch.topk(loss_neg, n_neg)
 
         return (loss_pos + loss_neg.sum()) / (n_pos + n_neg).float()

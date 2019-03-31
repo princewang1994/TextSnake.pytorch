@@ -88,6 +88,6 @@ if __name__ == '__main__':
 
     # img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map, meta = trainset[944]
 
-    for idx in range(950, len(trainset)):
+    for idx in range(0, len(trainset)):
         img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map, meta = trainset[idx]
         print(idx, img.shape)

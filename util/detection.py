@@ -186,6 +186,18 @@ class TextDetector(object):
         return all_tcls
 
     def detect(self, tr_pred, tcl_pred, sin_pred, cos_pred, radii_pred):
+        """
+        Input: FCN output, Output: text detection after post-processing
+
+        :param tr_pred: (tensor), text region prediction, (2, H, W)
+        :param tcl_pred: (tensor), text center line prediction, (2, H, W)
+        :param sin_pred: (tensor), sin prediction, (H, W)
+        :param cos_pred: (tensor), cos line prediction, (H, W)
+        :param radii_pred: (tensor), radii prediction, (H, W)
+
+        :return:
+            (list), tcl array: (n, 3), 3 denotes (x, y, radii)
+        """
 
         # thresholding
         tr_pred_mask = tr_pred[1] > self.tr_thresh
