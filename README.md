@@ -67,15 +67,29 @@ $ pip install -r requirements.txt
 
 ## Data preparation
 
-* `Total-Text`: follow the [total_text/README.md](dataset/total_text/README.md)
+* `Total-Text`: follow the [dataset/total_text/README.md](dataset/total_text/README.md)
+* `SynthText`: follow the [datset/synth-text/README.md](dataset/synth-text/README.md)
+
+## Pretraining with SynthText
+
+```shell
+$ CUDA_VISIBLE_DEVICES=$GPUID python train.py synthtext_pretrain --dataset synth-text --viz --max_epoch 1 --batch_size 8
+```
 
 ## Training
 
 Training model with given experiment name `$EXPNAME`
 
+training from scratch:
 ```shell
 $ EXPNAME=example
 $ CUDA_VISIBLE_DEVICES=$GPUID python train.py $EXPNAME --viz
+```
+
+training with pretrained model(improved performance much)
+```shell
+$ EXPNAME=example
+$ CUDA_VISIBLE_DEVICES=$GPUID python train.py example --viz --batch_size 8 --resume save/synthtext/textsnake_vgg_0.pth
 ```
 
 **options:**
@@ -100,26 +114,36 @@ $ CUDA_VISIBLE_DEVICES=$GPUID python demo.py $EXPNAME --checkepoch 190
 
 other options can be show by run `python train.py -h`
 
+## Evaluation
+
+Total-Text metric is included in `dataset/total_text/Evaluation_Protocol/Python_scripts/Deteval.py`, you should first modify the `input_dir` in `Deteval.py` and run following command for computing DetEval:
+
+```shell
+$ python dataset/total_text/Evaluation_Protocol/Python_scripts/Deteval.py
+```
+
+which will output 
+
 ## Performance
 
-- left: prediction
+- left: prediction/ground true
 - middle: text region(TR)
 - right: text center line(TCL)
 
-![](demo/24_img650.jpg)
+![](demo/img93.jpg)
 
-![](demo/26_img612.jpg)
+![](demo/img96.jpg)
 
-![](demo/13_img637.jpg)
+![](demo/img191.jpg)
 
-![](demo/107_img600.jpg)
+![](demo/img600.jpg)
 
 ## What is comming
 
-- [ ] Pretrained model upload (soon)
-- [ ] More dataset suport: [ICDAR15/[SynthText](https://github.com/ankush-me/SynthText)]
+- [x] Pretraining with SynthText
 - [x] Metric computing
-- [ ] Cython/C++ accelerate core functions
+- [ ] Pretrained model upload (soon)
+- [ ] More dataset suport: [ICDAR15]
 
 ## License
 

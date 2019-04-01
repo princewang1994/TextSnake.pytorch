@@ -26,7 +26,7 @@ class BaseOptions(object):
         # basic opts
         self.parser.add_argument('exp_name', type=str, help='Experiment name')
         self.parser.add_argument('--net', default='vgg', type=str, choices=['vgg', 'resnet'], help='Network architecture')
-        self.parser.add_argument('--dataset', default='total-text', type=str, choices=['total-text'], help='Dataset name')
+        self.parser.add_argument('--dataset', default='total-text', type=str, choices=['synth-text', 'total-text'], help='Dataset name')
         self.parser.add_argument('--resume', default=None, type=str, help='Path to target resume checkpoint')
         self.parser.add_argument('--num_workers', default=8, type=int, help='Number of workers used in dataloading')
         self.parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to train model')
@@ -52,6 +52,7 @@ class BaseOptions(object):
         self.parser.add_argument('--batch_size', default=4, type=int, help='Batch size for training')
         self.parser.add_argument('--optim', default='SGD', type=str, choices=['SGD', 'Adam'], help='Optimizer')
         self.parser.add_argument('--display_freq', default=50, type=int, help='display training metrics every # iterations')
+        self.parser.add_argument('--viz_freq', default=50, type=int, help='visualize training process every # iterations')
         self.parser.add_argument('--save_freq', default=5, type=int, help='save weights every # epoch')
         self.parser.add_argument('--log_freq', default=100, type=int, help='log to tensorboard every # iterations')
         self.parser.add_argument('--val_freq', default=100, type=int, help='do validation every # iterations')

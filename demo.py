@@ -128,7 +128,7 @@ def main():
     model = model.to(cfg.device)
     if cfg.cuda:
         cudnn.benchmark = True
-    detector = TextDetector()
+    detector = TextDetector(tr_thresh=cfg.tr_thresh, tcl_thresh=cfg.tcl_thresh)
 
     print('Start testing TextSnake.')
 
