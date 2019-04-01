@@ -25,16 +25,19 @@ class TextInstance(object):
 
         remove_points = []
 
-        # remove point if area is almost unchanged after removing it
-        ori_area = cv2.contourArea(points)
-        for p in range(len(points)):
-            # attempt to remove p
-            index = list(range(len(points)))
-            index.remove(p)
-            area = cv2.contourArea(points[index])
-            if np.abs(ori_area - area) / ori_area < 0.017 and len(points) - len(remove_points) > 4:
-                remove_points.append(p)
-        self.points = np.array([point for i, point in enumerate(points) if i not in remove_points])
+        if len(points) > 4:
+            # remove point if area is almost unchanged after removing it
+            ori_area = cv2.contourArea(points)
+            for p in range(len(points)):
+                # attempt to remove p
+                index = list(range(len(points)))
+                index.remove(p)
+                area = cv2.contourArea(points[index])
+                if np.abs(ori_area - area) / ori_area < 0.017 and len(points) - len(remove_points) > 4:
+                    remove_points.append(p)
+            self.points = np.array([point for i, point in enumerate(points) if i not in remove_points])
+        else:
+            self.points = np.array(points)
 
     def find_bottom_and_sideline(self):
         self.bottoms = find_bottom(self.points)  # find two bottoms of this Text

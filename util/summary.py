@@ -1,9 +1,11 @@
 from tensorboardX import SummaryWriter
+from util.misc import mkdirs
 
 class LogSummary(object):
 
     def __init__(self, log_path):
 
+        mkdirs(log_path)
         self.writer = SummaryWriter(log_path)
 
     def write_scalars(self, scalar_dict, n_iter, tag=None):

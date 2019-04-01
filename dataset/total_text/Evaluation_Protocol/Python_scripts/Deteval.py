@@ -11,7 +11,7 @@ from polygon_wrapper import area
 Input format: y0,x0, ..... yn,xn. Each detection is separated by the end of line token ('\n')'
 """
 
-input_dir = 'output/test'
+input_dir = 'output/finetune_totaltext'
 gt_dir = 'data/total-text/gt/Test'
 fid_path = 'Python_Pascal_result_last_check.txt'
 
@@ -278,6 +278,6 @@ str_write = ('Precision = %.4f - Recall = %.4f - Fscore = %.4f\n' % (precision, 
 fid.write(str_write)
 fid.close()
 
-print('Config: tr: {} - tp'.format(tr, tp))
+print('Config: tr: {} - tp: {}'.format(tr, tp))
 print(str_write)
 print('Done.')

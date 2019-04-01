@@ -27,6 +27,7 @@ def result2polygon(image, result):
     for disk in result:
         mask = np.zeros(image.shape[:2], dtype=np.uint8)
         for x, y, r in disk:
+            r = max(r, 1)
             cv2.circle(mask, (int(x), int(y)), int(r), (1), -1)
         _, conts, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         all_conts += [cont[:, 0, :] for cont in conts]
@@ -128,7 +129,7 @@ def main():
     model = model.to(cfg.device)
     if cfg.cuda:
         cudnn.benchmark = True
-    detector = TextDetector()
+    detector = TextDetector(tr_thresh=cfg.tr_thresh, tcl_thresh=cfg.tcl_thresh)
 
     print('Start testing TextSnake.')
 
