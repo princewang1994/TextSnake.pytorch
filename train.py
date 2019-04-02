@@ -56,6 +56,7 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch, logger):
     data_time = AverageMeter()
     end = time.time()
     model.train()
+    scheduler.step()
 
     print('Epoch: {} : LR = {}'.format(epoch, lr))
 
@@ -73,7 +74,6 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch, logger):
         loss = tr_loss + tcl_loss + sin_loss + cos_loss + radii_loss
 
         # backward
-        scheduler.step()
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -200,7 +200,7 @@ def main():
     # Model
     model = TextNet()
     if cfg.mgpu:
-        model = nn.DataParallel(model, device_ids=cfg.gpu_ids)
+        model = nn.DataParallel(model)
 
     model = model.to(cfg.device)
     if cfg.cuda:
@@ -216,7 +216,7 @@ def main():
     if cfg.dataset == 'synth-text':
         scheduler = FixLR(optimizer)
     else:
-        scheduler = lr_scheduler.StepLR(optimizer, step_size=10000, gamma=0.94)
+        scheduler = lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
 
     print('Start training TextSnake.')
     for epoch in range(cfg.start_epoch, cfg.max_epoch):

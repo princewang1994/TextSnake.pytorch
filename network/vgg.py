@@ -78,14 +78,14 @@ class VGG16(nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.net = VGG(make_layers(cfg['D']), init_weights=False)
-        self.net.load_state_dict(model_zoo.load_url(model_urls['vgg16']))
+        net = VGG(make_layers(cfg['D']), init_weights=False)
+        net.load_state_dict(model_zoo.load_url(model_urls['vgg16']))
 
-        self.stage1 = nn.Sequential(*[self.net.features[layer] for layer in range(0, 5)])
-        self.stage2 = nn.Sequential(*[self.net.features[layer] for layer in range(5, 10)])
-        self.stage3 = nn.Sequential(*[self.net.features[layer] for layer in range(10, 17)])
-        self.stage4 = nn.Sequential(*[self.net.features[layer] for layer in range(17, 24)])
-        self.stage5 = nn.Sequential(*[self.net.features[layer] for layer in range(24, 31)])
+        self.stage1 = nn.Sequential(*[net.features[layer] for layer in range(0, 5)])
+        self.stage2 = nn.Sequential(*[net.features[layer] for layer in range(5, 10)])
+        self.stage3 = nn.Sequential(*[net.features[layer] for layer in range(10, 17)])
+        self.stage4 = nn.Sequential(*[net.features[layer] for layer in range(17, 24)])
+        self.stage5 = nn.Sequential(*[net.features[layer] for layer in range(24, 31)])
 
     def forward(self, x):
         C1 = self.stage1(x)

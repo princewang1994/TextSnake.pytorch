@@ -14,8 +14,8 @@ class TextDetector(object):
         generate an inner point of input polygon using mean of x coordinate by:
         1. calculate mean of x coordinate(xmean)
         2. calculate maximum and minimum of y coordinate(ymax, ymin)
-        2. iterate for each y in range (ymin, ymax), find first segment in the polygon
-        3. calculate means of segment
+        3. iterate for each y in range (ymin, ymax), find first segment in the polygon
+        4. calculate means of segment
         :param cont: input polygon
         :return:
         """

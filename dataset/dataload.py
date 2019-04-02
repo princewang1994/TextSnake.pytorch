@@ -116,7 +116,7 @@ class TextDataset(data.Dataset):
         mask[rr, cc] = value
 
     def make_text_center_line(self, sideline1, sideline2, center_line, radius, \
-                              tcl_mask, radius_map, sin_map, cos_map, expand=0.2, shrink=1):
+                              tcl_mask, radius_map, sin_map, cos_map, expand=0.3, shrink=1):
 
         # TODO: shrink 1/2 * radius at two line end
         for i in range(shrink, len(center_line) - 1 - shrink):

@@ -110,7 +110,7 @@ class Rotate(object):
     def __call__(self, img, polygons=None):
         if np.random.randint(2):
             return img, polygons
-        angle = np.random.normal(loc=0.0, scale=0.5) * self.up  # angle 按照高斯分布
+        angle = np.random.uniform(-self.up, self.up)  #
         rows, cols = img.shape[0:2]
         M = cv2.getRotationMatrix2D((cols / 2, rows / 2), angle, 1.0)
         img = cv2.warpAffine(img, M, (cols, rows), borderValue=[0, 0, 0])
