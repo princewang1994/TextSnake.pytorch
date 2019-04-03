@@ -1,17 +1,27 @@
 # modified from https://github.com/cs-chan/Total-Text-Dataset/blob/master/Evaluation_Protocol/Python_scripts/Deteval.py
+import numpy as np
 
 from os import listdir
 from scipy import io
-import numpy as np
 from polygon_wrapper import iod
 from polygon_wrapper import area_of_intersection
 from polygon_wrapper import area
+import argparse
+from tqdm import tqdm
+
+parser = argparse.ArgumentParser()
+
+# basic opts
+parser.add_argument('exp_name', type=str, help='Model output directory')
+parser.add_argument('--tr', type=float, default=0.7, help='Recall threshold')
+parser.add_argument('--tp', type=float, default=0.6, help='Precision threshold')
+args = parser.parse_args()
 
 """
 Input format: y0,x0, ..... yn,xn. Each detection is separated by the end of line token ('\n')'
 """
 
-input_dir = 'output/finetune_totaltext'
+input_dir = 'output/{}'.format(args.exp_name)
 gt_dir = 'data/total-text/gt/Test'
 fid_path = 'Python_Pascal_result_last_check.txt'
 
@@ -72,15 +82,15 @@ global_fp = 0
 global_fn = 0
 global_sigma = []
 global_tau = []
-tr = 0.8
-tp = 0.4
+tr = args.tr
+tp = args.tp
 fsc_k = 0.8
 k = 2
 ###############################################################################
 
-for i, input_id in enumerate(allInputs):
+for i, input_id in enumerate(tqdm(allInputs)):
     if (input_id != '.DS_Store'):
-        print(i, input_id)
+        # print(i, input_id)
         detections = input_reading_mod(input_dir, input_id)
         groundtruths = gt_reading_mod(gt_dir, input_id)
         detections = detection_filtering(detections, groundtruths)  # filters detections overlapping with DC area
@@ -278,6 +288,7 @@ str_write = ('Precision = %.4f - Recall = %.4f - Fscore = %.4f\n' % (precision, 
 fid.write(str_write)
 fid.close()
 
+print('Input: {}'.format(input_dir))
 print('Config: tr: {} - tp: {}'.format(tr, tp))
 print(str_write)
 print('Done.')

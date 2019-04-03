@@ -103,8 +103,12 @@ class TextDetector(object):
 
         x_shift, y_shift = self.centerlize(x_init, y_init, cos, sin, tcl_mask)
         result = []
+        max_attempt = 200
+        attempt = 0
 
         while tcl_mask[int(y_shift), int(x_shift)]:
+
+            attempt += 1
 
             result.append(np.array([x_shift, y_shift, radii]))
             x, y = x_shift, y_shift
@@ -119,7 +123,7 @@ class TextDetector(object):
             radii = pred_radii[int(y_c), int(x_c)]
 
             # shift stride
-            for shrink in np.arange(0.5, 0.0, -0.1):  # [0.5, 0.4, 0.3, 0.2, 0.1]
+            for shrink in [1/2., 1/4., 1/8., 1/16., 1/32.]:
                 t = shrink * radii   # stride = +/- 0.5 * [sin|cos](theta), if new point is outside, shrink it until shrink < 0.1, hit ends
                 x_shift_pos = x_c + cos_c * t * direct  # positive direction
                 y_shift_pos = y_c + sin_c * t * direct  # positive direction
@@ -145,6 +149,8 @@ class TextDetector(object):
                     break
             # if out of bounds, break
             if int(x_shift) >= W or int(x_shift) < 0 or int(y_shift) >= H or int(y_shift) < 0:
+                break
+            if attempt > max_attempt:
                 break
         return result
 

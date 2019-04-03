@@ -2,7 +2,7 @@ import os
 import time
 import numpy as np
 import torch
-
+import subprocess
 import torch.backends.cudnn as cudnn
 import torch.utils.data as data
 
@@ -63,7 +63,7 @@ def load_model(model, model_path):
     model.load_state_dict(state_dict['model'])
 
 
-def inference(model, detector, test_loader):
+def inference(model, detector, test_loader, output_dir):
 
     model.eval()
 
@@ -105,7 +105,6 @@ def inference(model, detector, test_loader):
             img_show, contours = rescale_result(img_show, contours, H, W)
 
             # write to file
-            output_dir = os.path.join(cfg.output_dir, cfg.exp_name)
             mkdirs(output_dir)
             write_to_file(contours, os.path.join(output_dir, meta['image_id'][idx].replace('jpg', 'txt')))
 
@@ -132,9 +131,12 @@ def main():
     detector = TextDetector(tr_thresh=cfg.tr_thresh, tcl_thresh=cfg.tcl_thresh)
 
     print('Start testing TextSnake.')
+    output_dir = os.path.join(cfg.output_dir, cfg.exp_name)
+    inference(model, detector, test_loader, output_dir)
 
-    inference(model, detector, test_loader)
-
+    # compute DetEval
+    print('Computing DetEval in {}/{}'.format(cfg.output_dir, cfg.exp_name))
+    subprocess.call(['python', 'dataset/total_text/Evaluation_Protocol/Python_scripts/Deteval.py', args.exp_name])
     print('End.')
 
 
