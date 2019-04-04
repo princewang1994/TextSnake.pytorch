@@ -17,10 +17,11 @@ from util.visualize import visualize_detection
 from util.misc import mkdirs
 import cv2
 
-def result2polygon(image, result):
+def result2polygon(image, result, tcl_contour):
     """ convert geometric info(center_x, center_y, radii) into contours
     :param image: (np.array), input image
     :param result: (list), each with (n, 3), 3 denotes (x, y, radii)
+    :param tcl_contour: (list), each with (n_points, 2)
     :return: (np.ndarray list), polygon format contours
     """
     all_conts = []
@@ -84,12 +85,12 @@ def inference(model, detector, test_loader, output_dir):
             radii_pred = output[idx, 6].data.cpu().numpy()
 
             # get model output
-            batch_result = detector.detect(tr_pred, tcl_pred, sin_pred, cos_pred, radii_pred)  # (n_tcl, 3)
+            det_result, tcl_contour = detector.detect(tr_pred, tcl_pred, sin_pred, cos_pred, radii_pred)  # (n_tcl, 3)
 
             # visualization
             img_show = img[idx].permute(1, 2, 0).cpu().numpy()
             img_show = ((img_show * cfg.stds + cfg.means) * 255).astype(np.uint8)
-            contours = result2polygon(img_show, batch_result)
+            contours = result2polygon(img_show, det_result, tcl_contour)
 
             pred_vis = visualize_detection(img_show, tr_pred[1], tcl_pred[1], contours)
             gt_contour = []
