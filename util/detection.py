@@ -48,7 +48,7 @@ class TextDetector(object):
                         if cv2.pointPolygonTest(cont, (test_pt[0], test_pt[1]), False) > 0:
                             return test_pt
 
-    def centerlize(self, x, y, tangent_cos, tangent_sin, mask, stride=1):
+    def centerlize(self, x, y, tangent_cos, tangent_sin, mask, stride=1.):
         """
         centralizing (x, y) using tangent line and normal line.
         :return:
@@ -95,13 +95,8 @@ class TextDetector(object):
         """
 
         H, W = pred_sin.shape
-        x_init, y_init = init_xy
+        x_shift, y_shift = init_xy
 
-        sin = pred_sin[int(y_init), int(x_init)]
-        cos = pred_cos[int(y_init), int(x_init)]
-        radii = pred_radii[int(y_init), int(x_init)]
-
-        x_shift, y_shift = self.centerlize(x_init, y_init, cos, sin, tcl_mask)
         result = []
         max_attempt = 200
         attempt = 0
@@ -110,21 +105,19 @@ class TextDetector(object):
 
             attempt += 1
 
-            result.append(np.array([x_shift, y_shift, radii]))
-            x, y = x_shift, y_shift
-
-            sin = pred_sin[int(y), int(x)]
-            cos = pred_cos[int(y), int(x)]
-
-            x_c, y_c = self.centerlize(x, y, cos, sin, tcl_mask)
+            sin = pred_sin[int(y_shift), int(x_shift)]
+            cos = pred_cos[int(y_shift), int(x_shift)]
+            x_c, y_c = self.centerlize(x_shift, y_shift, cos, sin, tcl_mask)
 
             sin_c = pred_sin[int(y_c), int(x_c)]
             cos_c = pred_cos[int(y_c), int(x_c)]
-            radii = pred_radii[int(y_c), int(x_c)]
+            radii_c = pred_radii[int(y_c), int(x_c)]
+
+            result.append(np.array([x_c, y_c, radii_c * 1.3]))
 
             # shift stride
             for shrink in [1/2., 1/4., 1/8., 1/16., 1/32.]:
-                t = shrink * radii   # stride = +/- 0.5 * [sin|cos](theta), if new point is outside, shrink it until shrink < 0.1, hit ends
+                t = shrink * radii_c   # stride = +/- 0.5 * [sin|cos](theta), if new point is outside, shrink it until shrink < 1/32., hit ends
                 x_shift_pos = x_c + cos_c * t * direct  # positive direction
                 y_shift_pos = y_c + sin_c * t * direct  # positive direction
                 x_shift_neg = x_c - cos_c * t * direct  # negative direction
