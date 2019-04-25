@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from util.config import config as cfg
 from util.misc import fill_hole, regularize_sin_cos
 from util.misc import norm2
 
@@ -115,7 +116,7 @@ class TextDetector(object):
             cos_c = pred_cos[int(y_c), int(x_c)]
             radii_c = pred_radii[int(y_c), int(x_c)]
 
-            result.append(np.array([x_c, y_c, radii_c * 1.3]))
+            result.append(np.array([x_c, y_c, radii_c * (1. + cfg.post_process_expand)]))
 
             # shift stride
             for shrink in [1/2., 1/4., 1/8., 1/16., 1/32.]:

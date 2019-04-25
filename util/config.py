@@ -41,6 +41,9 @@ config.tr_thresh = 0.4
 # demo tcl threshold
 config.tcl_thresh = 0.5
 
+# expand ratio in post processing
+config.post_process_expand = 0.3
+
 def update_config(config, extra_config):
     for k, v in vars(extra_config).items():
         config[k] = v

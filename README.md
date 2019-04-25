@@ -35,7 +35,7 @@ Generally, this code has following features:
 1. include complete training and inference code
 2. pure python version without extra compiling
 3. compatible with laste PyTorch version (write with pytroch 0.4.0)
-4. support [TotalText](https://github.com/cs-chan/Total-Text-Dataset) dataset
+4. support [TotalText](https://github.com/cs-chan/Total-Text-Dataset) and [SynthText](http://www.robots.ox.ac.uk/~vgg/data/scenetext/) dataset
 
 
 ## Getting Started

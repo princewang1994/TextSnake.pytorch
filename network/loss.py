@@ -12,10 +12,15 @@ class TextLoss(nn.Module):
         neg = ((1 - target) * train_mask).byte()
 
         n_pos = pos.float().sum()
-        n_neg = min(int(neg.float().sum().item()), int(negative_ratio * n_pos.float()))
 
-        loss_pos = F.cross_entropy(predict[pos], target[pos], reduction='sum')
-        loss_neg = F.cross_entropy(predict[neg], target[neg], reduction='none')
+        if n_pos.item() > 0:
+            loss_pos = F.cross_entropy(predict[pos], target[pos], reduction='sum')
+            loss_neg = F.cross_entropy(predict[neg], target[neg], reduction='none')
+            n_neg = min(int(neg.float().sum().item()), int(negative_ratio * n_pos.float()))
+        else:
+            loss_pos = 0.
+            loss_neg = F.cross_entropy(predict[neg], target[neg], reduction='none')
+            n_neg = 100
         loss_neg, _ = torch.topk(loss_neg, n_neg)
 
         return (loss_pos + loss_neg.sum()) / (n_pos + n_neg).float()
@@ -54,13 +59,19 @@ class TextLoss(nn.Module):
 
         # loss_tr = F.cross_entropy(tr_pred[train_mask], tr_mask[train_mask].long())
         loss_tr = self.ohem(tr_pred, tr_mask.long(), train_mask.long())
-        loss_tcl = F.cross_entropy(tcl_pred[train_mask * tr_mask], \
-                                   tcl_mask[train_mask * tr_mask].long())
+
+        loss_tcl = 0.
+        tr_train_mask = train_mask * tr_mask
+        if tr_train_mask.sum().item() > 0:
+            loss_tcl = F.cross_entropy(tcl_pred[tr_train_mask], tcl_mask[tr_train_mask].long())
 
         # geometry losses
-        ones = radii_map.new(radii_pred[tcl_mask].size()).fill_(1.).float()
-        loss_radii = F.smooth_l1_loss(radii_pred[tcl_mask] / radii_map[tcl_mask], ones)
-        loss_sin = F.smooth_l1_loss(sin_pred[tcl_mask], sin_map[tcl_mask])
-        loss_cos = F.smooth_l1_loss(cos_pred[tcl_mask], cos_map[tcl_mask])
+        loss_radii, loss_sin, loss_cos = 0., 0., 0.
+        tcl_train_mask = train_mask * tcl_mask
+        if tcl_train_mask.sum().item() > 0:
+            ones = radii_map.new(radii_pred[tcl_mask].size()).fill_(1.).float()
+            loss_radii = F.smooth_l1_loss(radii_pred[tcl_mask] / radii_map[tcl_mask], ones)
+            loss_sin = F.smooth_l1_loss(sin_pred[tcl_mask], sin_map[tcl_mask])
+            loss_cos = F.smooth_l1_loss(cos_pred[tcl_mask], cos_map[tcl_mask])
 
         return loss_tr, loss_tcl, loss_radii, loss_sin, loss_cos

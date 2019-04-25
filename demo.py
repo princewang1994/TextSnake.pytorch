@@ -28,10 +28,13 @@ def result2polygon(image, result, tcl_contour):
     for disk in result:
         mask = np.zeros(image.shape[:2], dtype=np.uint8)
         for x, y, r in disk:
-            r = max(r, 1)
-            cv2.circle(mask, (int(x), int(y)), int(r), (1), -1)
+            cv2.circle(mask, (int(x), int(y)), max(1, int(r)), 1, -1)
         _, conts, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        all_conts += [cont[:, 0, :] for cont in conts]
+        if len(conts) > 1:
+            conts.sort(key=lambda x: cv2.contourArea(x), reverse=True)
+        elif not conts:
+            continue
+        all_conts.append(conts[0][:, 0, :])
     return all_conts
 
 
