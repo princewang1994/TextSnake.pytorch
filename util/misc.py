@@ -2,6 +2,7 @@ import numpy as np
 import errno
 import os
 import cv2
+from shapely.geometry import Polygon
 from util.config import config as cfg
 
 
@@ -190,7 +191,41 @@ def split_edge_seqence(points, long_edge, n_parts):
     splited_result = [p_first] + splited_result + [p_last]
     return np.stack(splited_result)
 
+def disjoint_find(x, F):
+    if F[x] == x:
+        return x
+    F[x] = disjoint_find(F[x], F)
+    return F[x]
+
+def disjoint_merge(x, y, F):
+    x = disjoint_find(x, F)
+    y = disjoint_find(y, F)
+    if x == y:
+        return False
+    F[y] = x
+    return True
 
 
+def merge_polygons(polygons, merge_map):
+
+    def merge_two_polygon(p1, p2):
+        p2 = Polygon(p2)
+        merged = p1.union(p2)
+        return merged
+
+    merge_map = [disjoint_find(x, merge_map) for x in range(len(merge_map))]
+    merge_map = np.array(merge_map)
+    final_polygons = []
+
+    for i in np.unique(merge_map):
+        merge_idx = np.where(merge_map == i)[0]
+        if len(merge_idx) > 0:
+            merged = Polygon(polygons[merge_idx[0]])
+            for j in range(1, len(merge_idx)):
+                merged = merge_two_polygon(merged, polygons[merge_idx[j]])
+            x, y = merged.exterior.coords.xy
+            final_polygons.append(np.stack([x, y], axis=1).astype(int))
+
+    return final_polygons
 
 

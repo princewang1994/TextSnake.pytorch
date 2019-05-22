@@ -2,7 +2,8 @@ import numpy as np
 import cv2
 from util.config import config as cfg
 from util.misc import fill_hole, regularize_sin_cos
-from util.misc import norm2
+from util.misc import norm2, vector_cos, vector_sin
+from util.misc import disjoint_merge, merge_polygons
 
 class TextDetector(object):
 
@@ -221,9 +222,38 @@ class TextDetector(object):
         return self.postprocessing(image, detect_result, tr_pred_mask)
 
     def merge_contours(self, all_contours):
-        # def step_in():
-        #     pass
-        return [cont for cont, disks in all_contours]
+
+        def stride(disks, other_contour, left, step=0.3):
+            if len(disks) < 2:
+                return False
+            if left:
+                last_point, before_point = disks[:2]
+            else:
+                before_point, last_point = disks[-2:]
+            radius = last_point[2]
+            cos = vector_cos(last_point[:2] - before_point[:2])
+            sin = vector_sin(last_point[:2] - before_point[:2])
+            new_point = last_point[:2] + radius * step * np.array([cos, sin])
+            return self.in_contour(other_contour, new_point)
+
+        def can_merge(disks, other_contour):
+            return stride(disks, other_contour, left=True) or stride(disks, other_contour, left=False)
+
+        F = list(range(len(all_contours)))
+        for i in range(len(all_contours)):
+            cont_i, disk_i = all_contours[i]
+            for j in range(i + 1, len(all_contours)):
+                cont_j, disk_j = all_contours[j]
+                if can_merge(disk_i, cont_j):
+                    disjoint_merge(i, j, F)
+        try:
+            merged_polygons = merge_polygons([cont for cont, disks in all_contours], F)
+        except:
+            import pickle
+            with open('/home/prince/ext_data/test.pkl', 'wb') as file:
+                pickle.dump({'cont': all_contours, 'F': F}, file)
+            raise
+        return merged_polygons
 
     def postprocessing(self, image, detect_result, tr_pred_mask):
         """ convert geometric info(center_x, center_y, radii) into contours
@@ -254,6 +284,10 @@ class TextDetector(object):
                 continue
             all_conts.append((conts[0][:, 0, :], disk))
 
-        merged_contours = self.merge_contours(all_conts)
+        # merge joined instances
+        if cfg.post_process_merge:
+            all_conts = self.merge_contours(all_conts)
+        else:
+            all_conts = [cont[0] for cont in all_conts]
 
-        return merged_contours
+        return all_conts

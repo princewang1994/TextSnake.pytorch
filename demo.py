@@ -1,5 +1,6 @@
 import os
 import time
+import cv2
 import numpy as np
 import torch
 import subprocess
@@ -15,7 +16,6 @@ from util.misc import to_device
 from util.option import BaseOptions
 from util.visualize import visualize_detection
 from util.misc import mkdirs
-import cv2
 
 def rescale_result(image, contours, H, W):
     ori_H, ori_W = image.shape[:2]
@@ -48,48 +48,59 @@ def load_model(model, model_path):
 
 def inference(model, detector, test_loader, output_dir):
 
+    total_time = 0.
+
     model.eval()
 
     for i, (img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map, meta) in enumerate(test_loader):
 
         img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map = to_device(
             img, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map)
+
+        torch.cuda.synchronize()
+        start = time.time()
+
         # inference
         output = model(img)
 
-        for idx in range(img.size(0)):
-            print('detect {} / {} images: {}.'.format(i, len(test_loader), meta['image_id'][idx]))
+        idx = 0 # test mode can only run with batch_size == 1
 
-            image = img[idx].data.cpu().numpy()
-            tr_pred = output[idx, 0:2].softmax(dim=0).data.cpu().numpy()
-            tcl_pred = output[idx, 2:4].softmax(dim=0).data.cpu().numpy()
-            sin_pred = output[idx, 4].data.cpu().numpy()
-            cos_pred = output[idx, 5].data.cpu().numpy()
-            radii_pred = output[idx, 6].data.cpu().numpy()
+        image = img[idx].data.cpu().numpy()
+        tr_pred = output[idx, 0:2].softmax(dim=0).data.cpu().numpy()
+        tcl_pred = output[idx, 2:4].softmax(dim=0).data.cpu().numpy()
+        sin_pred = output[idx, 4].data.cpu().numpy()
+        cos_pred = output[idx, 5].data.cpu().numpy()
+        radii_pred = output[idx, 6].data.cpu().numpy()
 
-            # get model output
-            contours = detector.detect(image, tr_pred, tcl_pred, sin_pred, cos_pred, radii_pred)  # (n_tcl, 3)
+        # get model output
+        contours = detector.detect(image, tr_pred, tcl_pred, sin_pred, cos_pred, radii_pred)  # (n_tcl, 3)
 
-            # visualization
-            img_show = img[idx].permute(1, 2, 0).cpu().numpy()
-            img_show = ((img_show * cfg.stds + cfg.means) * 255).astype(np.uint8)
+        torch.cuda.synchronize()
+        end = time.time()
+        total_time += end - start
+        fps = (i + 1) / total_time
+        print('detect {} / {} images: {}. ({:.2f} fps)'.format(i, len(test_loader), meta['image_id'][idx], fps))
 
-            pred_vis = visualize_detection(img_show, tr_pred[1], tcl_pred[1], contours)
-            gt_contour = []
-            for annot, n_annot in zip(meta['annotation'][idx], meta['n_annotation'][idx]):
-                if n_annot.item() > 0:
-                    gt_contour.append(annot[:n_annot].int().cpu().numpy())
-            gt_vis = visualize_detection(img_show, tr_mask[idx].cpu().numpy(), tcl_mask[idx].cpu().numpy(), gt_contour)
-            im_vis = np.concatenate([pred_vis, gt_vis], axis=0)
-            path = os.path.join(cfg.vis_dir, '{}_test'.format(cfg.exp_name), meta['image_id'][idx])
-            cv2.imwrite(path, im_vis)
+        # visualization
+        img_show = img[idx].permute(1, 2, 0).cpu().numpy()
+        img_show = ((img_show * cfg.stds + cfg.means) * 255).astype(np.uint8)
 
-            H, W = meta['Height'][idx].item(), meta['Width'][idx].item()
-            img_show, contours = rescale_result(img_show, contours, H, W)
+        pred_vis = visualize_detection(img_show, tr_pred[1], tcl_pred[1], contours)
+        gt_contour = []
+        for annot, n_annot in zip(meta['annotation'][idx], meta['n_annotation'][idx]):
+            if n_annot.item() > 0:
+                gt_contour.append(annot[:n_annot].int().cpu().numpy())
+        gt_vis = visualize_detection(img_show, tr_mask[idx].cpu().numpy(), tcl_mask[idx].cpu().numpy(), gt_contour)
+        im_vis = np.concatenate([pred_vis, gt_vis], axis=0)
+        path = os.path.join(cfg.vis_dir, '{}_test'.format(cfg.exp_name), meta['image_id'][idx])
+        cv2.imwrite(path, im_vis)
 
-            # write to file
-            mkdirs(output_dir)
-            write_to_file(contours, os.path.join(output_dir, meta['image_id'][idx].replace('jpg', 'txt')))
+        H, W = meta['Height'][idx].item(), meta['Width'][idx].item()
+        img_show, contours = rescale_result(img_show, contours, H, W)
+
+        # write to file
+        mkdirs(output_dir)
+        write_to_file(contours, os.path.join(output_dir, meta['image_id'][idx].replace('jpg', 'txt')))
 
 def main():
 
@@ -119,7 +130,8 @@ def main():
 
     # compute DetEval
     print('Computing DetEval in {}/{}'.format(cfg.output_dir, cfg.exp_name))
-    subprocess.call(['python', 'dataset/total_text/Evaluation_Protocol/Python_scripts/Deteval.py', args.exp_name])
+    subprocess.call(['python', 'dataset/total_text/Evaluation_Protocol/Python_scripts/Deteval.py', args.exp_name, '--tr', '0.7', '--tp', '0.6'])
+    subprocess.call(['python', 'dataset/total_text/Evaluation_Protocol/Python_scripts/Deteval.py', args.exp_name, '--tr', '0.8', '--tp', '0.4'])
     print('End.')
 
 

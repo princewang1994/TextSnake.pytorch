@@ -1,6 +1,6 @@
 # TextSnake: A Flexible Representation for Detecting Text of Arbitrary Shapes
 
-A PyTorch implement of **TextSnake: A Flexible Representation for Detecting Text of Arbitrary Shapes** (ECCV 2018) by `Face++`
+A PyTorch implement of **TextSnake: A Flexible Representation for Detecting Text of Arbitrary Shapes** (ECCV 2018) by `Megvii`
 
 - Paper link: [arXiv:1807.01544](https://arxiv.org/abs/1807.01544)
 - Github: [princewang1994/TextSnake.pytorch](https://github.com/princewang1994/TextSnake.pytorch)
@@ -89,13 +89,13 @@ $ CUDA_VISIBLE_DEVICES=$GPUID python train.py $EXPNAME --viz
 training with pretrained model(improved performance much)
 ```shell
 $ EXPNAME=example
-$ CUDA_VISIBLE_DEVICES=$GPUID python train.py example --viz --batch_size 8 --resume save/synthtext/textsnake_vgg_0.pth
+$ CUDA_VISIBLE_DEVICES=$GPUID python train.py example --viz --batch_size 8 --resume save/synthtext_pretrain/textsnake_vgg_0.pth
 ```
 
 **options:**
 
 - `exp_name`: experiment name, used to identify different training process
-- `--viz`: visualization toggle, output pictures are saved to './vis' by default
+- `--viz`: visualization toggle, output pictures are saved to `./vis` by default
 
 other options can be show by run `python train.py -h`
 
@@ -119,12 +119,43 @@ other options can be show by run `python train.py -h`
 Total-Text metric is included in `dataset/total_text/Evaluation_Protocol/Python_scripts/Deteval.py`, you should first modify the `input_dir` in `Deteval.py` and run following command for computing DetEval:
 
 ```shell
-$ python dataset/total_text/Evaluation_Protocol/Python_scripts/Deteval.py
+$ python dataset/total_text/Evaluation_Protocol/Python_scripts/Deteval.py $EXPNAME --tr 0.8 --tp 0.4
 ```
 
-which will output 
+or
+
+```shell
+$ python dataset/total_text/Evaluation_Protocol/Python_scripts/Deteval.py $EXPNAME --tr 0.7 --tp 0.6
+```
+
+it will output metrics reports.
+
+## Pretrained Models
+
+- SynthText pretrained model: [synthtext_fixlr/textsnake_vgg_0.pth](https://pan.baidu.com/s/1Q4D3pDyVP7qdi2Cs-vc9cQ) (extract code: `xmoh`)
+- Total-Text pretrained model: [finetune_larger_tcl/textsnake_vgg_180.pth](https://pan.baidu.com/s/11_PTTyxU4JMt91HV_4niBg) (extract code: `dms6`)
+
+Download from links above and place `pth` file to the corresponding path(`save/XXX/textsnake_vgg_XX.pth`).
 
 ## Performance
+
+### DetEval reporting
+
+Following table reports `DetEval` metrics when we set `vgg` as the backbone(can be reproduced by using pertained model in `Pretrained Model` section):
+
+|                   | tr=0.7/tp=0.6(P/R/F1)        | tr=0.8/tp=0.4(P/R/F1)        | FPS(On single 1080Ti) |
+| ----------------- | :--------------------------- | :--------------------------- | :-------------------- |
+| expand / no merge | 0.6521 / 0.5489 / 0.5961     | **0.8743 / 0.7111 / 0.7843** | **12.07**             |
+| expand / merge    | 0.6983 / 0.5784 / 0.6327     | 0.8585 / 0.6600 / 0.7463     | 8.38                  |
+| no expand / merge | **0.7533 / 0.6925 / 0.7216** | 0.6946 / 0.6283 / 0.6598     | 9.94                  |
+| no expand / merge | 0.7469 / 0.6774 / 0.7105     | 0.6913 / 0.6016 / 0.6433     | 11.05                 |
+| reported in paper | -                            | 82.7 / 74.5 / 78.4           |                       |
+
+\* `expand` denotes expanding radius by 0.3 times while post-processing
+
+\* `merge` denotes that merging overlapped instance while post-processing
+
+### Qualitative results
 
 - left: prediction/ground true
 - middle: text region(TR)
@@ -142,8 +173,10 @@ which will output
 
 - [x] Pretraining with SynthText
 - [x] Metric computing
-- [ ] Pretrained model upload (soon)
-- [ ] More dataset suport: [ICDAR15]
+- [x] Pretrained model upload
+- [ ] Pure inference script
+- [ ] More dataset suport: [ICDAR15, CTW1500]
+- [ ] Various backbone experiments
 
 ## License
 
@@ -151,4 +184,5 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## Acknowledgement
 
-This project is writen by [Prince Wang](https://github.com/princewang1994), part of codes refer to [songdejia/EAST](https://github.com/songdejia/EAST)
+* This project is writen by [Prince Wang](https://github.com/princewang1994), part of codes refer to [songdejia/EAST](https://github.com/songdejia/EAST)
+* Thanks [techkang](https://github.com/techkang) for your great help!

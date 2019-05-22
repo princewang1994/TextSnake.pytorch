@@ -36,13 +36,16 @@ config.max_points = 20
 config.use_hard = True
 
 # demo tr threshold
-config.tr_thresh = 0.4
+config.tr_thresh = 0.6
 
 # demo tcl threshold
-config.tcl_thresh = 0.5
+config.tcl_thresh = 0.4
 
 # expand ratio in post processing
 config.post_process_expand = 0.3
+
+# merge joined text instance when predicting
+config.post_process_merge = False
 
 def update_config(config, extra_config):
     for k, v in vars(extra_config).items():
