@@ -29,7 +29,7 @@ def result2polygon(image, result, tcl_contour):
         mask = np.zeros(image.shape[:2], dtype=np.uint8)
         for x, y, r in disk:
             cv2.circle(mask, (int(x), int(y)), max(1, int(r)), 1, -1)
-        _, conts, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        conts, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         if len(conts) > 1:
             conts.sort(key=lambda x: cv2.contourArea(x), reverse=True)
         elif not conts:
