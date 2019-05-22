@@ -17,27 +17,6 @@ from util.visualize import visualize_detection
 from util.misc import mkdirs
 import cv2
 
-def result2polygon(image, result, tcl_contour):
-    """ convert geometric info(center_x, center_y, radii) into contours
-    :param image: (np.array), input image
-    :param result: (list), each with (n, 3), 3 denotes (x, y, radii)
-    :param tcl_contour: (list), each with (n_points, 2)
-    :return: (np.ndarray list), polygon format contours
-    """
-    all_conts = []
-    for disk in result:
-        mask = np.zeros(image.shape[:2], dtype=np.uint8)
-        for x, y, r in disk:
-            cv2.circle(mask, (int(x), int(y)), max(1, int(r)), 1, -1)
-        conts, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        if len(conts) > 1:
-            conts.sort(key=lambda x: cv2.contourArea(x), reverse=True)
-        elif not conts:
-            continue
-        all_conts.append(conts[0][:, 0, :])
-    return all_conts
-
-
 def rescale_result(image, contours, H, W):
     ori_H, ori_W = image.shape[:2]
     image = cv2.resize(image, (W, H))
@@ -81,6 +60,7 @@ def inference(model, detector, test_loader, output_dir):
         for idx in range(img.size(0)):
             print('detect {} / {} images: {}.'.format(i, len(test_loader), meta['image_id'][idx]))
 
+            image = img[idx].data.cpu().numpy()
             tr_pred = output[idx, 0:2].softmax(dim=0).data.cpu().numpy()
             tcl_pred = output[idx, 2:4].softmax(dim=0).data.cpu().numpy()
             sin_pred = output[idx, 4].data.cpu().numpy()
@@ -88,12 +68,11 @@ def inference(model, detector, test_loader, output_dir):
             radii_pred = output[idx, 6].data.cpu().numpy()
 
             # get model output
-            det_result, tcl_contour = detector.detect(tr_pred, tcl_pred, sin_pred, cos_pred, radii_pred)  # (n_tcl, 3)
+            contours = detector.detect(image, tr_pred, tcl_pred, sin_pred, cos_pred, radii_pred)  # (n_tcl, 3)
 
             # visualization
             img_show = img[idx].permute(1, 2, 0).cpu().numpy()
             img_show = ((img_show * cfg.stds + cfg.means) * 255).astype(np.uint8)
-            contours = result2polygon(img_show, det_result, tcl_contour)
 
             pred_vis = visualize_detection(img_show, tr_pred[1], tcl_pred[1], contours)
             gt_contour = []

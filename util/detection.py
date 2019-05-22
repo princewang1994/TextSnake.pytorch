@@ -50,13 +50,19 @@ class TextDetector(object):
                             return test_pt
 
     def in_contour(self, cont, point):
+        """
+        utility function for judging whether `point` is in the `contour`
+        :param cont: cv2.findCountour result
+        :param point: 2d coordinate (x, y)
+        :return:
+        """
         x, y = point
         return cv2.pointPolygonTest(cont, (x, y), False) > 0
 
     def centerlize(self, x, y, H, W, tangent_cos, tangent_sin, tcl_contour, stride=1.):
         """
         centralizing (x, y) using tangent line and normal line.
-        :return:
+        :return: coordinate after centralizing
         """
 
         # calculate normal sin and cos
@@ -116,7 +122,7 @@ class TextDetector(object):
             cos_c = pred_cos[int(y_c), int(x_c)]
             radii_c = pred_radii[int(y_c), int(x_c)]
 
-            result.append(np.array([x_c, y_c, radii_c * (1. + cfg.post_process_expand)]))
+            result.append(np.array([x_c, y_c, radii_c]))
 
             # shift stride
             for shrink in [1/2., 1/4., 1/8., 1/16., 1/32.]:
@@ -148,7 +154,7 @@ class TextDetector(object):
                 break
             if attempt > max_attempt:
                 break
-        return result
+        return np.array(result)
 
     def build_tcl(self, tcl_pred, sin_pred, cos_pred, radii_pred):
         """
@@ -162,10 +168,10 @@ class TextDetector(object):
         all_tcls = []
 
         # find disjoint regions
-        mask = fill_hole(tcl_pred)
-        conts, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        tcl_mask = fill_hole(tcl_pred)
+        tcl_contours, _ = cv2.findContours(tcl_mask.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        for cont in conts:
+        for cont in tcl_contours:
 
             # find an inner point of polygon
             init = self.find_innerpoint(cont)
@@ -175,27 +181,25 @@ class TextDetector(object):
 
             x_init, y_init = init
 
-            # find left tcl
+            # find left/right tcl
             tcl_left = self.mask_to_tcl(sin_pred, cos_pred, radii_pred, cont, (x_init, y_init), direct=1)
-            tcl_left = np.array(tcl_left)
-            # find right tcl
             tcl_right = self.mask_to_tcl(sin_pred, cos_pred, radii_pred, cont, (x_init, y_init), direct=-1)
-            tcl_right = np.array(tcl_right)
             # concat
             tcl = np.concatenate([tcl_left[::-1][:-1], tcl_right])
             all_tcls.append(tcl)
 
-        return all_tcls, conts
+        return all_tcls
 
-    def detect(self, tr_pred, tcl_pred, sin_pred, cos_pred, radii_pred):
+    def detect(self, image, tr_pred, tcl_pred, sin_pred, cos_pred, radii_pred):
         """
         Input: FCN output, Output: text detection after post-processing
 
-        :param tr_pred: (tensor), text region prediction, (2, H, W)
-        :param tcl_pred: (tensor), text center line prediction, (2, H, W)
-        :param sin_pred: (tensor), sin prediction, (H, W)
-        :param cos_pred: (tensor), cos line prediction, (H, W)
-        :param radii_pred: (tensor), radii prediction, (H, W)
+        :param image: (np.array) input image (3, H, W)
+        :param tr_pred: (np.array), text region prediction, (2, H, W)
+        :param tcl_pred: (np.array), text center line prediction, (2, H, W)
+        :param sin_pred: (np.array), sin prediction, (H, W)
+        :param cos_pred: (np.array), cos line prediction, (H, W)
+        :param radii_pred: (np.array), radii prediction, (H, W)
 
         :return:
             (list), tcl array: (n, 3), 3 denotes (x, y, radii)
@@ -212,6 +216,44 @@ class TextDetector(object):
         sin_pred, cos_pred = regularize_sin_cos(sin_pred, cos_pred)
 
         # find tcl in each predicted mask
-        detect_result, tcl_contour = self.build_tcl(tcl_mask, sin_pred, cos_pred, radii_pred)
+        detect_result = self.build_tcl(tcl_mask, sin_pred, cos_pred, radii_pred)
 
-        return detect_result, tcl_contour
+        return self.postprocessing(image, detect_result, tr_pred_mask)
+
+    def merge_contours(self, all_contours):
+        # def step_in():
+        #     pass
+        return [cont for cont, disks in all_contours]
+
+    def postprocessing(self, image, detect_result, tr_pred_mask):
+        """ convert geometric info(center_x, center_y, radii) into contours
+        :param image: (np.array), input image
+        :param result: (list), each with (n, 3), 3 denotes (x, y, radii)
+        :param tr_pred_mask: (np.array), predicted text area mask, each with shape (H, W)
+        :return: (np.ndarray list), polygon format contours
+        """
+
+        all_conts = []
+        for disk in detect_result:
+            reconstruct_mask = np.zeros(image.shape[1:], dtype=np.uint8)
+            for x, y, r in disk:
+                # expand radius for higher recall
+                if cfg.post_process_expand > 0.0:
+                    r *= (1. + cfg.post_process_expand)
+                cv2.circle(reconstruct_mask, (int(x), int(y)), max(1, int(r)), 1, -1)
+
+            # according to the paper, at least half of pixels in the reconstructed text area should be classiﬁed as TR
+            if (reconstruct_mask * tr_pred_mask).sum() < reconstruct_mask.sum() * 0.5:
+                continue
+
+            # filter out too small objects
+            conts, _ = cv2.findContours(reconstruct_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            if len(conts) > 1:
+                conts.sort(key=lambda x: cv2.contourArea(x), reverse=True)
+            elif not conts:
+                continue
+            all_conts.append((conts[0][:, 0, :], disk))
+
+        merged_contours = self.merge_contours(all_conts)
+
+        return merged_contours
