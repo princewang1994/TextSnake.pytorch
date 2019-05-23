@@ -94,12 +94,12 @@ $ CUDA_VISIBLE_DEVICES=$GPUID python train.py example --viz --batch_size 8 --res
 
 **options:**
 
-- `exp_name`: experiment name, used to identify different training process
+- `exp_name`: experiment name, used to identify different training processes
 - `--viz`: visualization toggle, output pictures are saved to `./vis` by default
 
 other options can be show by run `python train.py -h`
 
-## Running the tests
+## Running tests
 
 Runing following command can generate demo on TotalText dataset (300 pictures), the result are save to `./vis` by default
 
@@ -134,6 +134,7 @@ it will output metrics reports.
 
 - SynthText pretrained model: [synthtext_fixlr/textsnake_vgg_0.pth](https://pan.baidu.com/s/1Q4D3pDyVP7qdi2Cs-vc9cQ) (extract code: `xmoh`)
 - Total-Text pretrained model: [finetune_larger_tcl/textsnake_vgg_180.pth](https://pan.baidu.com/s/11_PTTyxU4JMt91HV_4niBg) (extract code: `dms6`)
+- Google Drive: [TextSnake_pretrain](https://drive.google.com/drive/folders/1omMmL8nkdPk43SVOOQMD9AkpE-tztqkf?usp=sharing)
 
 Download from links above and place `pth` file to the corresponding path(`save/XXX/textsnake_vgg_XX.pth`).
 
@@ -149,7 +150,7 @@ Following table reports `DetEval` metrics when we set `vgg` as the backbone(can 
 | expand / merge       | 0.698 \| 0.578 \| 0.633     | 0.859 \| 0.660 \| 0.746     | 8.38                  |
 | no expand / no merge | **0.753 \| 0.693 \| 0.722** | 0.695 \| 0.628 \| 0.660     | 9.94                  |
 | no expand / merge    | 0.747 \| 0.677 \| 0.710     | 0.691 \| 0.602 \| 0.643     | 11.05                 |
-| reported in paper    | -                           | 0.827 \| 0.745 \| 0.784     |                       |
+| reported on paper    | -                           | 0.827 \| 0.745 \| 0.784     |                       |
 
 \* `expand` denotes expanding radius by 0.3 times while post-processing
 
