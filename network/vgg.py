@@ -76,10 +76,11 @@ cfg = {
 
 class VGG16(nn.Module):
 
-    def __init__(self):
+    def __init__(self, pretrain=True):
         super().__init__()
         net = VGG(make_layers(cfg['D']), init_weights=False)
-        net.load_state_dict(model_zoo.load_url(model_urls['vgg16']))
+        if pretrain:
+            net.load_state_dict(model_zoo.load_url(model_urls['vgg16']))
 
         self.stage1 = nn.Sequential(*[net.features[layer] for layer in range(0, 5)])
         self.stage2 = nn.Sequential(*[net.features[layer] for layer in range(5, 10)])

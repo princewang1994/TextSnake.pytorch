@@ -22,14 +22,15 @@ class Upsample(nn.Module):
 
 class TextNet(nn.Module):
 
-    def __init__(self, backbone='vgg', output_channel=7):
+    def __init__(self, backbone='vgg', output_channel=7, is_training=True):
         super().__init__()
 
+        self.is_training = is_training
         self.backbone_name = backbone
         self.output_channel = output_channel
 
         if backbone == 'vgg':
-            self.backbone = VGG16()
+            self.backbone = VGG16(pretrain=self.is_training)
             self.deconv5 = nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1)
             self.merge4 = Upsample(512 + 256, 128)
             self.merge3 = Upsample(256 + 128, 64)
