@@ -62,6 +62,11 @@ class TextNet(nn.Module):
 
         return output
 
+    def load_model(self, model_path):
+        print('Loading from {}'.format(model_path))
+        state_dict = torch.load(model_path)
+        self.load_state_dict(state_dict['model'])
+
 if __name__ == '__main__':
     import torch
 

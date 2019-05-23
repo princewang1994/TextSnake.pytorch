@@ -1,15 +1,21 @@
 import numpy as np
 import cv2
+import torch
 from util.config import config as cfg
 from util.misc import fill_hole, regularize_sin_cos
 from util.misc import norm2, vector_cos, vector_sin
 from util.misc import disjoint_merge, merge_polygons
 
+
 class TextDetector(object):
 
-    def __init__(self, tr_thresh=0.4, tcl_thresh=0.6):
+    def __init__(self, model, tr_thresh=0.4, tcl_thresh=0.6):
+        self.model = model
         self.tr_thresh = tr_thresh
         self.tcl_thresh = tcl_thresh
+
+        # evaluation mode
+        model.eval()
 
     def find_innerpoint(self, cont):
         """
@@ -191,7 +197,7 @@ class TextDetector(object):
 
         return all_tcls
 
-    def detect(self, image, tr_pred, tcl_pred, sin_pred, cos_pred, radii_pred):
+    def detect_contours(self, image, tr_pred, tcl_pred, sin_pred, cos_pred, radii_pred):
         """
         Input: FCN output, Output: text detection after post-processing
 
@@ -221,7 +227,39 @@ class TextDetector(object):
 
         return self.postprocessing(image, detect_result, tr_pred_mask)
 
+    def detect(self, image):
+        """
+
+        :param image:
+        :return:
+        """
+        # get model output
+        output = self.model(image)
+        image = image[0].data.cpu().numpy()
+        tr_pred = output[0, 0:2].softmax(dim=0).data.cpu().numpy()
+        tcl_pred = output[0, 2:4].softmax(dim=0).data.cpu().numpy()
+        sin_pred = output[0, 4].data.cpu().numpy()
+        cos_pred = output[0, 5].data.cpu().numpy()
+        radii_pred = output[0, 6].data.cpu().numpy()
+
+        # find text contours
+        contours = self.detect_contours(image, tr_pred, tcl_pred, sin_pred, cos_pred, radii_pred)  # (n_tcl, 3)
+
+        output = {
+            'image': image,
+            'tr': tr_pred,
+            'tcl': tcl_pred,
+            'sin': sin_pred,
+            'cos': cos_pred,
+            'radii': radii_pred
+        }
+        return contours, output
+
     def merge_contours(self, all_contours):
+        """ Merge overlapped instances to one instance with disjoint find / merge algorithm
+        :param all_contours: (list(np.array)), each with (n_points, 2)
+        :return: (list(np.array)), each with (n_points, 2)
+        """
 
         def stride(disks, other_contour, left, step=0.3):
             if len(disks) < 2:
@@ -246,13 +284,8 @@ class TextDetector(object):
                 cont_j, disk_j = all_contours[j]
                 if can_merge(disk_i, cont_j):
                     disjoint_merge(i, j, F)
-        try:
-            merged_polygons = merge_polygons([cont for cont, disks in all_contours], F)
-        except:
-            import pickle
-            with open('/home/prince/ext_data/test.pkl', 'wb') as file:
-                pickle.dump({'cont': all_contours, 'F': F}, file)
-            raise
+
+        merged_polygons = merge_polygons([cont for cont, disks in all_contours], F)
         return merged_polygons
 
     def postprocessing(self, image, detect_result, tr_pred_mask):

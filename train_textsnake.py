@@ -198,7 +198,7 @@ def main():
     logger = LogSummary(log_dir)
 
     # Model
-    model = TextNet(is_training=True)
+    model = TextNet(is_training=True, backbone=cfg.net)
     if cfg.mgpu:
         model = nn.DataParallel(model)
 

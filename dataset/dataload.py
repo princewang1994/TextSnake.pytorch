@@ -185,5 +185,22 @@ class TextDataset(data.Dataset):
         }
         return image, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map, meta
 
+    def get_test_data(self, image, image_id, image_path):
+        H, W, _ = image.shape
+
+        if self.transform:
+            image, polygons = self.transform(image)
+
+        # to pytorch channel sequence
+        image = image.transpose(2, 0, 1)
+
+        meta = {
+            'image_id': image_id,
+            'image_path': image_path,
+            'Height': H,
+            'Width': W
+        }
+        return image, meta
+
     def __len__(self):
         raise NotImplementedError()

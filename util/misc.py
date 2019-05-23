@@ -7,6 +7,8 @@ from util.config import config as cfg
 
 
 def to_device(*tensors):
+    if len(tensors) < 2:
+        return tensors[0].to(cfg.device)
     return (t.to(cfg.device) for t in tensors)
 
 
@@ -22,6 +24,14 @@ def mkdirs(newdir):
         # Reraise the error unless it's about an already existing directory
         if err.errno != errno.EEXIST or not os.path.isdir(newdir):
             raise
+
+def rescale_result(image, contours, H, W):
+    ori_H, ori_W = image.shape[:2]
+    image = cv2.resize(image, (W, H))
+    for cont in contours:
+        cont[:, 0] = (cont[:, 0] * W / ori_W).astype(int)
+        cont[:, 1] = (cont[:, 1] * H / ori_H).astype(int)
+    return image, contours
 
 
 def fill_hole(input_mask):

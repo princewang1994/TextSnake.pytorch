@@ -3,10 +3,11 @@ import time
 import cv2
 import numpy as np
 import torch
+import subprocess
 import torch.backends.cudnn as cudnn
 import torch.utils.data as data
 
-from dataset.deploy import DeployDataset
+from dataset.total_text import TotalText
 from network.textnet import TextNet
 from util.detection import TextDetector
 from util.augmentation import BaseTransform
@@ -33,9 +34,10 @@ def inference(detector, test_loader, output_dir):
 
     total_time = 0.
 
-    for i, (image, meta) in enumerate(test_loader):
+    for i, (image, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map, meta) in enumerate(test_loader):
 
-        image = to_device(image)
+        image, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map = to_device(
+            image, train_mask, tr_mask, tcl_mask, radius_map, sin_map, cos_map)
 
         torch.cuda.synchronize()
         start = time.time()
@@ -56,12 +58,18 @@ def inference(detector, test_loader, output_dir):
         img_show = image[idx].permute(1, 2, 0).cpu().numpy()
         img_show = ((img_show * cfg.stds + cfg.means) * 255).astype(np.uint8)
 
+        pred_vis = visualize_detection(img_show, contours, tr_pred[1], tcl_pred[1])
+        gt_contour = []
+        for annot, n_annot in zip(meta['annotation'][idx], meta['n_annotation'][idx]):
+            if n_annot.item() > 0:
+                gt_contour.append(annot[:n_annot].int().cpu().numpy())
+        gt_vis = visualize_detection(img_show, gt_contour, tr_mask[idx].cpu().numpy(), tcl_mask[idx].cpu().numpy())
+        im_vis = np.concatenate([pred_vis, gt_vis], axis=0)
+        path = os.path.join(cfg.vis_dir, '{}_test'.format(cfg.exp_name), meta['image_id'][idx])
+        cv2.imwrite(path, im_vis)
+
         H, W = meta['Height'][idx].item(), meta['Width'][idx].item()
         img_show, contours = rescale_result(img_show, contours, H, W)
-
-        pred_vis = visualize_detection(img_show, contours)
-        path = os.path.join(cfg.vis_dir, '{}_deploy'.format(cfg.exp_name), meta['image_id'][idx])
-        cv2.imwrite(path, pred_vis)
 
         # write to file
         mkdirs(output_dir)
@@ -69,8 +77,10 @@ def inference(detector, test_loader, output_dir):
 
 def main():
 
-    testset = DeployDataset(
-        image_root=cfg.img_root,
+    testset = TotalText(
+        data_root='data/total-text',
+        ignore_list=None,
+        is_training=False,
         transform=BaseTransform(size=cfg.input_size, mean=cfg.means, std=cfg.stds)
     )
     test_loader = data.DataLoader(testset, batch_size=1, shuffle=False, num_workers=cfg.num_workers)
@@ -91,19 +101,22 @@ def main():
     output_dir = os.path.join(cfg.output_dir, cfg.exp_name)
     inference(detector, test_loader, output_dir)
 
+    # compute DetEval
+    print('Computing DetEval in {}/{}'.format(cfg.output_dir, cfg.exp_name))
+    subprocess.call(['python', 'dataset/total_text/Evaluation_Protocol/Python_scripts/Deteval.py', args.exp_name, '--tr', '0.7', '--tp', '0.6'])
+    subprocess.call(['python', 'dataset/total_text/Evaluation_Protocol/Python_scripts/Deteval.py', args.exp_name, '--tr', '0.8', '--tp', '0.4'])
+    print('End.')
+
 
 if __name__ == "__main__":
-
     # parse arguments
     option = BaseOptions()
     args = option.initialize()
 
-    assert args.img_root is not None, 'option --img_root must be set'
-
     update_config(cfg, args)
     print_config(cfg)
 
-    vis_dir = os.path.join(cfg.vis_dir, '{}_deploy'.format(cfg.exp_name))
+    vis_dir = os.path.join(cfg.vis_dir, '{}_test'.format(cfg.exp_name))
     if not os.path.exists(vis_dir):
         mkdirs(vis_dir)
     # main

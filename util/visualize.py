@@ -39,17 +39,17 @@ def visualize_network_output(output, tr_mask, tcl_mask, mode='train'):
         cv2.imwrite(path, show)
 
 
-def visualize_detection(image, tr, tcl, contours):
+def visualize_detection(image, contours, tr=None, tcl=None):
     image_show = image.copy()
     image_show = np.ascontiguousarray(image_show[:, :, ::-1])
     image_show = cv2.polylines(image_show, contours, True, (0, 0, 255), 3)
 
-    tr = (tr > cfg.tr_thresh).astype(np.uint8)
-    tcl = (tcl > cfg.tcl_thresh).astype(np.uint8)
-
-    tr = cv2.cvtColor(tr * 255, cv2.COLOR_GRAY2BGR)
-    tcl = cv2.cvtColor(tcl * 255, cv2.COLOR_GRAY2BGR)
-    image_show = np.concatenate([image_show, tr, tcl], axis=1)
-    return image_show
-    # path = os.path.join(cfg.vis_dir, image_id)
-    # cv2.imwrite(path, image_show)
+    if (tr is not None) and (tcl is not None):
+        tr = (tr > cfg.tr_thresh).astype(np.uint8)
+        tcl = (tcl > cfg.tcl_thresh).astype(np.uint8)
+        tr = cv2.cvtColor(tr * 255, cv2.COLOR_GRAY2BGR)
+        tcl = cv2.cvtColor(tcl * 255, cv2.COLOR_GRAY2BGR)
+        image_show = np.concatenate([image_show, tr, tcl], axis=1)
+        return image_show
+    else:
+        return image_show

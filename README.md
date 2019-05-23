@@ -22,7 +22,7 @@ Comparison of diﬀerent representations for text instances. (a) Axis-aligned re
 </div>
 
 
-Text snake element:
+Textsnake elements:
 
 - center point
 - tangent line
@@ -61,7 +61,7 @@ git clone https://github.com/princewang1994/TextSnake.pytorch.git
 
 2. python package can be installed with `pip`
 ```shell
-$ cd $TEXTSNAKE
+$ cd $TEXTSNAKE_ROOT
 $ pip install -r requirements.txt
 ```
 
@@ -105,7 +105,7 @@ Runing following command can generate demo on TotalText dataset (300 pictures), 
 
 ```shell
 $ EXPNAME=example
-$ CUDA_VISIBLE_DEVICES=$GPUID python demo.py $EXPNAME --checkepoch 190
+$ CUDA_VISIBLE_DEVICES=$GPUID python eval_textsnake.py $EXPNAME --checkepoch 190
 ```
 
 **options:**
@@ -143,17 +143,31 @@ Download from links above and place `pth` file to the corresponding path(`save/X
 
 Following table reports `DetEval` metrics when we set `vgg` as the backbone(can be reproduced by using pertained model in `Pretrained Model` section):
 
-|                   | tr=0.7 / tp=0.6(P/R/F1)      | tr=0.8 / tp=0.4(P/R/F1)      | FPS(On single 1080Ti) |
-| ----------------- | :--------------------------- | :--------------------------- | :-------------------- |
-| expand / no merge | 0.6521 / 0.5489 / 0.5961     | **0.8743 / 0.7111 / 0.7843** | **12.07**             |
-| expand / merge    | 0.6983 / 0.5784 / 0.6327     | 0.8585 / 0.6600 / 0.7463     | 8.38                  |
-| no expand / merge | **0.7533 / 0.6925 / 0.7216** | 0.6946 / 0.6283 / 0.6598     | 9.94                  |
-| no expand / merge | 0.7469 / 0.6774 / 0.7105     | 0.6913 / 0.6016 / 0.6433     | 11.05                 |
-| reported in paper | -                            | 82.7 / 74.5 / 78.4           |                       |
+|                   | tr=0.7 / tp=0.6(P\|R\|F1)   | tr=0.8 / tp=0.4(P\|R\|F1)   | FPS(On single 1080Ti) |
+| ----------------- | :-------------------------- | :-------------------------- | :-------------------- |
+| expand / no merge | 0.652 \| 0.549 \| 0.596     | **0.874 \| 0.711 \| 0.784** | **12.07**             |
+| expand / merge    | 0.698 \| 0.578 \| 0.633     | 0.859 \| 0.660 \| 0.746     | 8.38                  |
+| no expand / merge | **0.753 \| 0.693 \| 0.722** | 0.695 \| 0.628 \| 0.660     | 9.94                  |
+| no expand / merge | 0.747 \| 0.677 \| 0.710     | 0.691 \| 0.602 \| 0.643     | 11.05                 |
+| reported in paper | -                           | 0.827 \| 0.745 \| 0.784     |                       |
 
 \* `expand` denotes expanding radius by 0.3 times while post-processing
 
 \* `merge` denotes that merging overlapped instance while post-processing
+
+## Pure Inference
+
+You can also run prediction on your own dataset without annotations:
+
+1. Download pretrained model and place `.pth` file to `save/pretrained/textsnake_vgg_180.pth`
+2. Run pure inference script as following: 
+
+```shell
+$ EXPNAME=pretrained
+$ CUDA_VISIBLE_DEVICES=$GPUID python demo.py $EXPNAME --checkepoch 180 --img_root /path/to/image
+```
+
+predicted result will be saved in `output/$EXPNAME` and visualization in `vis/${EXPNAME}_deploy`
 
 ### Qualitative results
 
@@ -174,7 +188,7 @@ Following table reports `DetEval` metrics when we set `vgg` as the backbone(can 
 - [x] Pretraining with SynthText
 - [x] Metric computing
 - [x] Pretrained model upload
-- [ ] Pure inference script
+- [x] Pure inference script
 - [ ] More dataset suport: [ICDAR15, CTW1500]
 - [ ] Various backbone experiments
 

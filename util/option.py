@@ -63,8 +63,11 @@ class BaseOptions(object):
         self.parser.add_argument('--stds', type=int, default=(0.229, 0.224, 0.225), nargs='+', help='std')
         self.parser.add_argument('--input_size', default=512, type=int, help='model input size')
 
-        # test args
+        # eval args
         self.parser.add_argument('--checkepoch', default=-1, type=int, help='Load checkpoint number')
+
+        # demo args
+        self.parser.add_argument('--img_root', default=None, type=str, help='Path to deploy images')
 
     def parse(self, fixed=None):
 
