@@ -11,6 +11,10 @@ def to_device(*tensors):
 
 
 def mkdirs(newdir):
+    """
+    make directory with parent path
+    :param newdir: target path
+    """
     try:
         if not os.path.exists(newdir):
             os.makedirs(newdir)

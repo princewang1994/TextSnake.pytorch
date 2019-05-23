@@ -145,6 +145,6 @@ if __name__ == "__main__":
 
     vis_dir = os.path.join(cfg.vis_dir, '{}_test'.format(cfg.exp_name))
     if not os.path.exists(vis_dir):
-        os.mkdir(vis_dir)
+        mkdirs(vis_dir)
     # main
     main()
