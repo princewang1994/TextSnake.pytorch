@@ -143,13 +143,13 @@ Download from links above and place `pth` file to the corresponding path(`save/X
 
 Following table reports `DetEval` metrics when we set `vgg` as the backbone(can be reproduced by using pertained model in `Pretrained Model` section):
 
-|                   | tr=0.7 / tp=0.6(P\|R\|F1)   | tr=0.8 / tp=0.4(P\|R\|F1)   | FPS(On single 1080Ti) |
-| ----------------- | :-------------------------- | :-------------------------- | :-------------------- |
-| expand / no merge | 0.652 \| 0.549 \| 0.596     | **0.874 \| 0.711 \| 0.784** | **12.07**             |
-| expand / merge    | 0.698 \| 0.578 \| 0.633     | 0.859 \| 0.660 \| 0.746     | 8.38                  |
-| no expand / merge | **0.753 \| 0.693 \| 0.722** | 0.695 \| 0.628 \| 0.660     | 9.94                  |
-| no expand / merge | 0.747 \| 0.677 \| 0.710     | 0.691 \| 0.602 \| 0.643     | 11.05                 |
-| reported in paper | -                           | 0.827 \| 0.745 \| 0.784     |                       |
+|                      | tr=0.7 / tp=0.6(P\|R\|F1)   | tr=0.8 / tp=0.4(P\|R\|F1)   | FPS(On single 1080Ti) |
+| -------------------- | :-------------------------- | :-------------------------- | :-------------------- |
+| expand / no merge    | 0.652 \| 0.549 \| 0.596     | **0.874 \| 0.711 \| 0.784** | **12.07**             |
+| expand / merge       | 0.698 \| 0.578 \| 0.633     | 0.859 \| 0.660 \| 0.746     | 8.38                  |
+| no expand / no merge | **0.753 \| 0.693 \| 0.722** | 0.695 \| 0.628 \| 0.660     | 9.94                  |
+| no expand / merge    | 0.747 \| 0.677 \| 0.710     | 0.691 \| 0.602 \| 0.643     | 11.05                 |
+| reported in paper    | -                           | 0.827 \| 0.745 \| 0.784     |                       |
 
 \* `expand` denotes expanding radius by 0.3 times while post-processing
 

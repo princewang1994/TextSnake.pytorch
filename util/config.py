@@ -42,10 +42,10 @@ config.tr_thresh = 0.6
 config.tcl_thresh = 0.4
 
 # expand ratio in post processing
-config.post_process_expand = 0.0
+config.post_process_expand = 0.3
 
 # merge joined text instance when predicting
-config.post_process_merge = True
+config.post_process_merge = False
 
 def update_config(config, extra_config):
     for k, v in vars(extra_config).items():

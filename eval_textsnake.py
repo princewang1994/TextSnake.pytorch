@@ -51,7 +51,7 @@ def inference(detector, test_loader, output_dir):
         end = time.time()
         total_time += end - start
         fps = (i + 1) / total_time
-        print('detect {} / {} images: {}. ({:.2f} fps)'.format(i, len(test_loader), meta['image_id'][idx], fps))
+        print('detect {} / {} images: {}. ({:.2f} fps)'.format(i + 1, len(test_loader), meta['image_id'][idx], fps))
 
         # visualization
         tr_pred, tcl_pred = output['tr'], output['tcl']
