@@ -143,7 +143,7 @@ Download from links above and place `pth` file to the corresponding path(`save/X
 
 Following table reports `DetEval` metrics when we set `vgg` as the backbone(can be reproduced by using pertained model in `Pretrained Model` section):
 
-|                   | tr=0.7/tp=0.6(P/R/F1)        | tr=0.8/tp=0.4(P/R/F1)        | FPS(On single 1080Ti) |
+|                   | tr=0.7 / tp=0.6(P/R/F1)      | tr=0.8 / tp=0.4(P/R/F1)      | FPS(On single 1080Ti) |
 | ----------------- | :--------------------------- | :--------------------------- | :-------------------- |
 | expand / no merge | 0.6521 / 0.5489 / 0.5961     | **0.8743 / 0.7111 / 0.7843** | **12.07**             |
 | expand / merge    | 0.6983 / 0.5784 / 0.6327     | 0.8585 / 0.6600 / 0.7463     | 8.38                  |

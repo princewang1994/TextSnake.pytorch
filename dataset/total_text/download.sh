@@ -1,7 +1,7 @@
 set -e
 
 # download image data
-wget http://www.cs-chan.com/source/ICDAR2017/totaltext.zip
+bash gdrivedl.sh https://drive.google.com/file/d/1bC68CzsSVTusZVvOkk7imSZSbgD1MqK2/view?usp=sharing totaltext.zip
 
 unzip totaltext.zip
 chmod -R o-w Images
@@ -9,7 +9,7 @@ rm -rf __MACOSX
 mv Images/Train/img61.JPG Images/Train/img61.jpg
 
 # download ground truth data
-wget http://www.cs-chan.com/source/ICDAR2017/groundtruth_text.zip
+bash gdrivedl.sh https://drive.google.com/file/d/19quCaJGePvTc3yPZ7MAGNijjKfy77-ke/view?usp=sharing groundtruth_text.zip
 
 unzip groundtruth_text.zip -d gt
 chmod -R o-w gt
